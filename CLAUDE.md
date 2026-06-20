@@ -36,7 +36,8 @@ Supporting files: [config.ts](src/config.ts) holds the locked constants and the 
 
 ## Invariants — do not break these (they are the game)
 
-- **The agent must never receive the target image, the reference HTML, or any asset.** The entire game lives at this boundary (`Target.html` is documented "Never shown to the agent"). It also never sees its own previous render — all perception stays with the player.
+- **The in-round agent must never receive the target image, the reference HTML, or any asset.** The entire game lives at this boundary (`Target.html` is documented "Never shown to the agent"). It also never sees its own previous render — all perception stays with the player.
+- **Exception — the post-round coach.** After a round is *scored and over*, an opt-in coach (see [context/features/009-prompt-coach.md](context/features/009-prompt-coach.md)) is given the reference HTML plus the player's prompts to explain why the agent built what it did and how to prompt better. This is a separate path that produces **no scored attempt** and cannot affect accuracy — it does not relax the in-round boundary above.
 - **Reference and attempts must use the same renderer** ([lib/render.ts](src/lib/render.ts)). Don't render the target through a different path.
 - **Scoring formula is locked**: `Score = 1000 · A^γ · (1 − λ(P − 1))`. `A^γ` is applied **only** at scoring time in `computeScore`; the player is always shown raw accuracy `A`. Defaults `DEFAULT_GAMMA = 2.5`, `DEFAULT_LAMBDA = 0.05`, both live-tunable in the toolbar.
 - **Locked rules**: `MAX_PROMPTS = 5`, `ROUND_MS = 10 min`. Time is a leaderboard tiebreaker only — never folded into the score.

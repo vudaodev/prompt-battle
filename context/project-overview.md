@@ -64,6 +64,7 @@ D. **The AI Agent**
 - **Never** the target image and **never** any assets — the entire game lives at this boundary
 - Self-render OFF (ranked): the agent doesn't see its own previous output, keeping all perception on the player
 - HTML/CSS-only output enforced (scripts, inline handlers, and `javascript:` URLs stripped)
+- **Exception — post-round coach:** after a round is *scored and over*, an opt-in coach may be shown the reference HTML plus the player's prompts to explain the agent's approach and how to prompt better. Separate path, **no scored attempt**, cannot affect accuracy — the in-round boundary above is unchanged (prototype: [context/features/009-prompt-coach.md](features/009-prompt-coach.md))
 
 E. **Trust & Anti-cheat**
 

@@ -125,7 +125,8 @@ Pixel diff only works if target and output are rasterized at byte-identical dime
 - Render in an `<iframe sandbox>` with scripts disabled and a strict CSP blocking external network requests (no exfiltration, no phoning home, no loading the target).
 - Fixed viewport, no scroll, output clipped to 400×300.
 - HTML/CSS-only is enforced server-side in prod, not just by prompt instruction.
-- Because the agent never receives the target and rendering+scoring happen server-side, the player cannot extract the target or fake a score. The only legitimate channel is description quality.
+- Because the in-round agent never receives the target and rendering+scoring happen server-side, the player cannot extract the target or fake a score. The only legitimate channel is description quality.
+- **Exception — post-round coach:** once a round is *scored and over*, an opt-in coach may be shown the reference HTML alongside the player's prompts to explain why the agent built what it did and how to describe the target better next time. It is a distinct path that emits **no scored attempt** and runs only after finalization, so it cannot leak the target into play or alter accuracy — the in-round boundary above is unchanged. (Prototype: [context/features/009-prompt-coach.md](features/009-prompt-coach.md).)
 - **Timer authority:** server stamps round start; server validates the ≤10-min window and ≤5-prompt cap. Never trust the client clock or prompt counter.
 
 > Note: the CSP’s no-external-requests rule is now unconditionally clean — since no target uses imported assets, the agent never has a legitimate reason to emit `<img src>`, `@font-face` from a URL, or any external fetch. Any such request is unambiguously something to strip.
