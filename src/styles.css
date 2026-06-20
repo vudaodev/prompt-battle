@@ -227,6 +227,15 @@ body {
     background: var(--surface-2);
 }
 
+.stage-start {
+    flex-direction: column;
+    gap: 12px;
+}
+
+.stage-start-hint {
+    margin: 0;
+}
+
 /* ---- meta + palette ---- */
 .meta {
     display: flex;
