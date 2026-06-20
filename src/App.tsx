@@ -129,6 +129,7 @@ export default function App() {
     const [targetError, setTargetError] = useState<string | null>(null);
     const refPixels = useRef<Uint8ClampedArray | null>(null);
     const promptRef = useRef<HTMLTextAreaElement>(null);
+    const howToPlayRef = useRef<HTMLDialogElement>(null);
 
     const [round, dispatch] = useReducer(roundReducer, initialRound);
 
@@ -366,6 +367,66 @@ export default function App() {
                             </div>
                         )}
                     </Stage>
+                    <button
+                        type="button"
+                        className="how-to-play-trigger"
+                        onClick={() => howToPlayRef.current?.showModal()}
+                    >
+                        How To Play
+                    </button>
+                    <dialog
+                        ref={howToPlayRef}
+                        className="how-to-play-dialog"
+                        onClick={(e) => {
+                            // Close when the backdrop (the dialog itself) is clicked.
+                            if (e.target === howToPlayRef.current)
+                                howToPlayRef.current?.close();
+                        }}
+                    >
+                        <div className="how-to-play-card">
+                            <div className="how-to-play-head">
+                                <h2 className="how-to-play-title">
+                                    How To Play
+                                </h2>
+                                <button
+                                    type="button"
+                                    className="how-to-play-close"
+                                    aria-label="Close"
+                                    onClick={() => howToPlayRef.current?.close()}
+                                >
+                                    ×
+                                </button>
+                            </div>
+                            <ol className="how-to-play-steps">
+                                <li>
+                                    Click <strong>Start</strong> to reveal the
+                                    target and start the{' '}
+                                    {Math.round(ROUND_MS / 60000)}-minute timer.
+                                </li>
+                                <li>
+                                    Describe the target to the agent in plain
+                                    language — it can’t see it, so you are its
+                                    eyes. Name shapes, sizes and positions.
+                                </li>
+                                <li>
+                                    Use the exact hex codes shown beside the
+                                    target; click a swatch to drop one into your
+                                    prompt.
+                                </li>
+                                <li>
+                                    Refine across up to {MAX_PROMPTS} prompts —
+                                    fewer prompts scores higher, so aim to nail
+                                    it early.
+                                </li>
+                                <li>
+                                    Toggle <strong>Diff overlay</strong> to see
+                                    where your render misses, then{' '}
+                                    <strong>Submit early</strong> when you’re
+                                    happy — or let the timer run out.
+                                </li>
+                            </ol>
+                        </div>
+                    </dialog>
                     <div className="meta">
                         <span className="badge">{target.name}</span>
                         <span className="badge ghost">{target.difficulty}</span>
