@@ -1,6 +1,6 @@
 ---
 description: Manage current feature workflow - start, review, explain or complete
-argument-hint: load|start|review|explain|complete
+argument-hint: create|load|start|review|explain|complete
 ---
 
 ## Context
@@ -24,17 +24,31 @@ Execute the requested action: $ARGUMENTS
 
 ---
 
+### If action is "create":
+
+1. Check the $ARGUMENTS (after "create"):
+
+- There should be at least two arguments, in the format: `/create {feature-name} {feature-description}`
+- Inside of the `/context/features` folder, we have a `feature-spec-template.md` file that contains a file structure to follow. We also have the features we wish to implement, in the following format: `{feature-number}-{feature-name}.md`
+- If at least two arguments are not present, instruct the user to provide them.
+
+2. Creating the file
+
+- Create a file inside of '/context/features' with the same naming convention (`{feature-number}-{feature-name}.md`)
+- The file's content should be contain details for implementing `{feature-description}`, and be in the same format as `feature-spec-template.md`
+- Be as concise as possible, but do not omit any important details
+
 ### If action is "load":
 
 1. Check $ARGUMENTS (after "load"):
-   - If it looks like a filename (single word, no spaces): Look for `context/features/{name}.md`
-   - If it's multiple words: Use as inline feature description, generate goals
-   - If empty: Error - "load" requires a spec filename or feature description
+    - If it looks like a filename (single word, no spaces): Look for `context/features/{name}.md`
+    - If it's multiple words: Use as inline feature description, generate goals
+    - If empty: Error - "load" requires a spec filename or feature description
 2. Update current-feature.md:
-   - Update H1 heading to include feature name (e.g., `# Current Feature: Add Navbar`)
-   - Write goals as bullet points under ## Goals
-   - Write any additional notes/context under ## Notes
-   - Set Status to "Not Started"
+    - Update H1 heading to include feature name (e.g., `# Current Feature: Add Navbar`)
+    - Write goals as bullet points under ## Goals
+    - Write any additional notes/context under ## Notes
+    - Set Status to "Not Started"
 3. Confirm spec loaded and show the feature summary
 
 ---
@@ -54,10 +68,10 @@ Execute the requested action: $ARGUMENTS
 1. Read current-feature.md to understand the goals
 2. Review all code changes made for this feature
 3. Check for:
-   - ✅ Goals met
-   - ❌ Goals missing or incomplete
-   - ⚠️ Code quality issues or bugs
-   - 🚫 Scope creep (code beyond goals)
+    - ✅ Goals met
+    - ❌ Goals missing or incomplete
+    - ⚠️ Code quality issues or bugs
+    - 🚫 Scope creep (code beyond goals)
 4. Final verdict: Ready to complete or needs changes
 
 ---
@@ -67,9 +81,9 @@ Execute the requested action: $ARGUMENTS
 1. Read current-feature.md to understand what was implemented
 2. Run `git diff main --name-only` to get list of files changed
 3. For each file created or modified:
-   - Show the file path
-   - Give a 1-2 sentence explanation of what it does / what changed
-   - Highlight any key functions, components, or patterns used
+    - Show the file path
+    - Give a 1-2 sentence explanation of what it does / what changed
+    - Highlight any key functions, components, or patterns used
 4. End with a brief summary of how the pieces fit together
 
 Output format:
@@ -97,9 +111,9 @@ Brief summary of the data/control flow between these files.
 5. Merge into main
 6. Switch back to main branch
 7. Reset current-feature.md:
-   - Change H1 back to `# Current Feature`
-   - Clear Goals and Notes sections
-   - Set Status to "Not Started"
+    - Change H1 back to `# Current Feature`
+    - Clear Goals and Notes sections
+    - Set Status to "Not Started"
 8. Add feature summary to the END of History
 
 ---
