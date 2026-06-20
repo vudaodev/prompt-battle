@@ -10,10 +10,13 @@ import {
     SYSTEM_PROMPT,
     COACH_SYSTEM_PROMPT,
     getEnvKey,
+    getElevenLabsEnvKey,
 } from './config';
 import type { AttemptStep, Msg, ProviderId, Target } from './types';
 import { targets } from './targets/manifest';
 import { callAgent } from './lib/llm';
+import { transcribeAudio } from './lib/stt';
+import { useRecorder } from './lib/useRecorder';
 import { prepareHtml } from './lib/sanitize';
 import { renderHtmlToCanvas, canvasPixels } from './lib/render';
 import { computeDiff, computeScore } from './lib/scoring';
@@ -179,6 +182,11 @@ export default function App({ onHome }: { onHome?: () => void } = {}) {
     const [model, setModel] = useState(providerCfg.models[0]);
     const [keyOverride, setKeyOverride] = useState('');
 
+    // ElevenLabs STT (prompt-box mic) — separate key from the LLM providers.
+    const [sttKeyOverride, setSttKeyOverride] = useState('');
+    const [isTranscribing, setIsTranscribing] = useState(false);
+    const recorder = useRecorder();
+
     const [gamma, setGamma] = useState(DEFAULT_GAMMA);
     const [lambda, setLambda] = useState(DEFAULT_LAMBDA);
 
@@ -200,6 +208,14 @@ export default function App({ onHome }: { onHome?: () => void } = {}) {
     const keySource: 'pasted' | 'env' | 'none' = keyOverride.trim()
         ? 'pasted'
         : envKey
+          ? 'env'
+          : 'none';
+
+    const sttEnvKey = getElevenLabsEnvKey();
+    const effectiveSttKey = sttKeyOverride.trim() || sttEnvKey;
+    const sttKeySource: 'pasted' | 'env' | 'none' = sttKeyOverride.trim()
+        ? 'pasted'
+        : sttEnvKey
           ? 'env'
           : 'none';
 
@@ -353,6 +369,33 @@ export default function App({ onHome }: { onHome?: () => void } = {}) {
         }
     }
 
+    // Mic toggle: click to record, click again to stop + transcribe. The
+    // transcript is appended into the prompt draft (input-only — no agent call).
+    async function handleMic() {
+        if (promptDisabled || !effectiveSttKey) return;
+        try {
+            if (recorder.isRecording) {
+                const audio = await recorder.stop();
+                setIsTranscribing(true);
+                const text = (
+                    await transcribeAudio({ apiKey: effectiveSttKey, audio })
+                ).trim();
+                if (text) {
+                    setDraft((prev) => (prev ? `${prev} ${text}` : text));
+                }
+            } else {
+                await recorder.start();
+            }
+        } catch (e) {
+            dispatch({
+                type: 'FAIL',
+                error: e instanceof Error ? e.message : 'Microphone failed.',
+            });
+        } finally {
+            setIsTranscribing(false);
+        }
+    }
+
     function handleFinalize() {
         dispatch({
             type: 'FINALIZE',
@@ -426,6 +469,8 @@ export default function App({ onHome }: { onHome?: () => void } = {}) {
                 model={model}
                 keySource={keySource}
                 keyOverride={keyOverride}
+                sttKeySource={sttKeySource}
+                sttKeyOverride={sttKeyOverride}
                 gamma={gamma}
                 lambda={lambda}
                 targetIndex={targetIndex}
@@ -436,6 +481,7 @@ export default function App({ onHome }: { onHome?: () => void } = {}) {
                 }}
                 onModel={setModel}
                 onKeyOverride={setKeyOverride}
+                onSttKeyOverride={setSttKeyOverride}
                 onGamma={setGamma}
                 onLambda={setLambda}
                 onTarget={setTargetIndex}
@@ -721,6 +767,26 @@ export default function App({ onHome }: { onHome?: () => void } = {}) {
                                         : 'Send prompt'}
                                 </button>
                                 <button
+                                    className={`btn${recorder.isRecording ? ' recording' : ''}`}
+                                    onClick={handleMic}
+                                    disabled={
+                                        promptDisabled ||
+                                        !effectiveSttKey ||
+                                        isTranscribing
+                                    }
+                                    title={
+                                        effectiveSttKey
+                                            ? 'Speak your prompt'
+                                            : 'Add an ElevenLabs API key to use the mic'
+                                    }
+                                >
+                                    {isTranscribing
+                                        ? 'Transcribing…'
+                                        : recorder.isRecording
+                                          ? '● Rec'
+                                          : '🎤 Speak'}
+                                </button>
+                                <button
                                     className="btn"
                                     onClick={handleFinalize}
                                     disabled={
@@ -861,6 +927,8 @@ interface ToolbarProps {
     model: string;
     keySource: 'pasted' | 'env' | 'none';
     keyOverride: string;
+    sttKeySource: 'pasted' | 'env' | 'none';
+    sttKeyOverride: string;
     gamma: number;
     lambda: number;
     targetIndex: number;
@@ -868,6 +936,7 @@ interface ToolbarProps {
     onProvider: (p: ProviderId) => void;
     onModel: (m: string) => void;
     onKeyOverride: (k: string) => void;
+    onSttKeyOverride: (k: string) => void;
     onGamma: (n: number) => void;
     onLambda: (n: number) => void;
     onTarget: (i: number) => void;
@@ -956,6 +1025,29 @@ function Toolbar(props: ToolbarProps) {
                         }
                         value={props.keyOverride}
                         onChange={(e) => props.onKeyOverride(e.target.value)}
+                    />
+                </label>
+
+                <label className="field key">
+                    <span>
+                        ElevenLabs key{' '}
+                        <em className={`keytag ${props.sttKeySource}`}>
+                            {props.sttKeySource === 'env'
+                                ? 'from .env'
+                                : props.sttKeySource === 'pasted'
+                                  ? 'pasted'
+                                  : 'missing'}
+                        </em>
+                    </span>
+                    <input
+                        type="password"
+                        placeholder={
+                            props.sttKeySource === 'env'
+                                ? 'using .env key'
+                                : 'paste key for mic (optional)'
+                        }
+                        value={props.sttKeyOverride}
+                        onChange={(e) => props.onSttKeyOverride(e.target.value)}
                     />
                 </label>
 
