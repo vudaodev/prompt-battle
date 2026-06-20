@@ -39,15 +39,19 @@
                     #2f86e8 60%,
                     #34c5d8 100%
                 );
-                box-shadow: 0 24px 60px -18px rgba(34, 86, 224, 0.7);
+                /* No box-shadow: html2canvas 1.4.1 mis-renders a blurred,
+                   negative-spread shadow as a hard square behind the logo, which
+                   showed through as a phantom square in the rasterized target. */
                 overflow: hidden;
             }
 
-            /* subtle sheen so it isn't a flat fill */
+            /* subtle sheen so it isn't a flat fill. border-radius: inherit keeps
+               html2canvas from painting the overlay past the logo's rounded corners. */
             .logo::after {
                 content: '';
                 position: absolute;
                 inset: 0;
+                border-radius: inherit;
                 background: radial-gradient(
                     120% 100% at 100% 0%,
                     rgba(255, 255, 255, 0.18),
