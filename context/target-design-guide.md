@@ -36,6 +36,21 @@ If you can, verify your output through html2canvas 1.4.1 directly (it's a small 
 - Center the artwork on a solid background color so edges are unambiguous.
 - Vary difficulty: a two-color split is **easy**; a multi-layer card or logo is **hard**.
 
+## ⚠️ Scoring-aware design: don't let one color dominate
+
+The score is a **pixel-diff** between the original and the recreation, so the difficulty of a target is driven by how its pixels are distributed across colors — not by how complex it looks. The trap: **if one color covers most of the canvas, a near-empty prompt already scores very high**, because matching that background alone matches most of the pixels. The detail that actually takes skill to describe is then worth almost nothing, and lazy prompts finish close to careful ones.
+
+**Worked example — a football pitch that was too easy.** A green pitch with thin white lines (outer boundary, halfway line, center circle, center spot) is ~94% green: the white lines are only ~6% of the 120,000 pixels. So a player whose entire prompt is *"green background, 400 by 300"* — describing none of the actual content — lands at ~94% raw accuracy, which through the locked score formula (`1000 · A^γ` with default γ=2.5) is **~857 points on the first prompt for zero real description.** The lines — the only skill-bearing part — were worth barely ~140 points combined. That collapses the skill gradient and makes the target trivial.
+
+**Rules of thumb:**
+
+- **No single color should own the canvas.** Aim for the most dominant color to sit roughly **under ~60%** of the pixels. The lower the floor a one-color guess hits, the more score is left to be *earned*. (A two-color 50/50 split floors a single-color guess at ~50%; a 94%-background design floors it at ~94%.)
+- **Make the skill-bearing detail occupy real area.** Thin lines and tiny accents barely move the pixel count. If the interesting part of a design is thin, either thicken it or add more of it so getting it right (or wrong) actually matters.
+- **Fill the canvas; don't drown the design in background.** Large empty margins of a single backdrop color inflate the dominant color. Crop tighter or add content.
+- **Sanity-check the "lazy prompt" floor.** Ask: *what raw accuracy would I get by describing only the background (or only the single biggest block)?* If that number is high (say >75%), the target is too easy — rebalance the palette's coverage before shipping it.
+
+For the football pitch specifically, the fix was to add the real pitch furniture (penalty boxes, goal areas, penalty arcs/spots, corner arcs) and thicken the lines: this both looks like a real pitch and pushes white well above 6%, so omitting detail now costs real accuracy. It stays pure CSS and 100%-reconstructable.
+
 ## Minimal skeleton
 
 ```html
