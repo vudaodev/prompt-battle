@@ -8,6 +8,7 @@ import bullseye from './02-bullseye.html?raw';
 import tricolore from './03-tricolore.html?raw';
 import nested from './04-nested.html?raw';
 import profileCard from './05-profile-card.html?raw';
+import encode from './06-encode.html?raw';
 
 export const targets: Target[] = [
   {
@@ -74,6 +75,22 @@ export const targets: Target[] = [
       { name: 'Border', hex: '#2c2950' },
       { name: 'Indigo', hex: '#3a36c4' },
       { name: 'Amber', hex: '#ffb020' },
+    ],
+  },
+  {
+    id: 'encode',
+    name: 'Encode Logo',
+    difficulty: 'hard',
+    kind: 'shapes',
+    diffThreshold: 0.12, // slightly looser: rounded corners, radial sheen, and large AA glyph/gradient edges
+    html: encode,
+    palette: [
+      { name: 'Backdrop', hex: '#1b1f24' },
+      { name: 'Blue', hex: '#1f49d8' },
+      { name: 'Azure', hex: '#2256e0' },
+      { name: 'Sky', hex: '#2f86e8' },
+      { name: 'Cyan', hex: '#34c5d8' },
+      { name: 'White', hex: '#ffffff' },
     ],
   },
 ];
