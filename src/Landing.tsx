@@ -113,19 +113,23 @@ export default function Landing({ onStart }: { onStart: () => void }) {
 
             <section className="landing-hero">
                 <div className="landing-hero-copy">
-                    <span className="landing-eyebrow">Prompt Battle</span>
+                    <span className="landing-eyebrow">
+                        Prompt training for teams
+                    </span>
                     <h1 className="landing-title">
-                        You can see it.
+                        Turn vague asks into
                         <br />
                         <span className="landing-title-accent">
-                            Your agent can&rsquo;t.
+                            precise AI results.
                         </span>
                     </h1>
                     <p className="landing-lede">
-                        Recreate a hidden visual by directing an AI coding agent
-                        in plain language. The only lever is how well you
-                        describe it — describe it well enough and the rebuild
-                        scores a perfect 100%.
+                        Prompt Battle makes prompting a measurable skill. Your
+                        team recreates a hidden visual by directing a blind AI
+                        agent in plain language — and a pixel-diff score proves
+                        exactly how clear the instructions were. Describe it well
+                        enough and the rebuild scores a perfect 100%. Type or
+                        speak every prompt with built-in voice input.
                     </p>
                     <div className="landing-cta">
                         <button className="btn primary" onClick={onStart}>
