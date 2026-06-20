@@ -12,7 +12,7 @@ import {
     getEnvKey,
     getElevenLabsEnvKey,
 } from './config';
-import type { AttemptStep, Msg, ProviderId, Target } from './types';
+import type { AttemptStep, Msg, PaletteColor, ProviderId, Target } from './types';
 import { targets } from './targets/manifest';
 import { callAgent } from './lib/llm';
 import { transcribeAudio } from './lib/stt';
@@ -132,6 +132,29 @@ function formatTime(ms: number): string {
 }
 
 const pct = (a: number) => `${(a * 100).toFixed(1)}%`;
+
+/**
+ * Resolve palette colour *names* to their exact hex so a player who says or types
+ * "azure" sends the agent the precise `#2256e0` it needs to score — the same value
+ * a swatch click would have inserted. Appends ` (hex)` after the first occurrence
+ * of each palette name (word-boundary, case-insensitive), preserving the player's
+ * wording. Skips a colour whose hex is already present (e.g. a swatch was clicked).
+ *
+ * The agent still only learns colours the player explicitly named — it is never
+ * given the full palette legend, so the in-round blindness boundary is preserved.
+ */
+function annotatePaletteColors(prompt: string, palette: PaletteColor[]): string {
+    let out = prompt;
+    for (const { name, hex } of palette) {
+        if (out.toLowerCase().includes(hex.toLowerCase())) continue;
+        const escaped = name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        out = out.replace(
+            new RegExp(`\\b${escaped}\\b`, 'i'),
+            (match) => `${match} (${hex})`,
+        );
+    }
+    return out;
+}
 
 /**
  * Assemble the single user message the post-round coach analyses: the target's
@@ -318,6 +341,9 @@ export default function App({ onHome }: { onHome?: () => void } = {}) {
     async function handleSubmit() {
         if (!canSubmit) return;
         const prompt = draft.trim();
+        // What the agent sees: palette colour names resolved to their exact hex.
+        // The prompt log still shows the raw `prompt` (what the player said).
+        const sentPrompt = annotatePaletteColors(prompt, target.palette);
         const seq = round.promptsUsed + 1;
         setDraft('');
         dispatch({ type: 'START_THINKING' });
@@ -325,7 +351,7 @@ export default function App({ onHome }: { onHome?: () => void } = {}) {
         try {
             const messages: Msg[] = [
                 ...round.history,
-                { role: 'user', content: prompt },
+                { role: 'user', content: sentPrompt },
             ];
             const raw = await callAgent({
                 provider,
@@ -377,9 +403,12 @@ export default function App({ onHome }: { onHome?: () => void } = {}) {
             if (recorder.isRecording) {
                 const audio = await recorder.stop();
                 setIsTranscribing(true);
-                const text = (
+                const raw = (
                     await transcribeAudio({ apiKey: effectiveSttKey, audio })
                 ).trim();
+                // Resolve spoken colour names to their exact hex in-place, so the
+                // player sees e.g. "azure (#2256e0)" beside what they said.
+                const text = annotatePaletteColors(raw, target.palette);
                 if (text) {
                     setDraft((prev) => (prev ? `${prev} ${text}` : text));
                 }
