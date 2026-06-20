@@ -100,10 +100,15 @@ const pct = (a: number) => `${(a * 100).toFixed(1)}%`;
 // ---------------------------------------------------------------- component
 
 export default function App() {
-    const [targetIndex, setTargetIndex] = useState(0);
+    // Default to the Encode target; look it up by id so this survives reordering.
+    const defaultTargetIndex = Math.max(
+        0,
+        targets.findIndex((t) => t.id === 'encode'),
+    );
+    const [targetIndex, setTargetIndex] = useState(defaultTargetIndex);
     const target = targets[targetIndex];
 
-    const [provider, setProvider] = useState<ProviderId>('anthropic');
+    const [provider, setProvider] = useState<ProviderId>('openai');
     const providerCfg = PROVIDERS.find((p) => p.id === provider)!;
     const [model, setModel] = useState(providerCfg.models[0]);
     const [keyOverride, setKeyOverride] = useState('');
