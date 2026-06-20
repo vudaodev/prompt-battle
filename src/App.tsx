@@ -118,6 +118,7 @@ export default function App() {
     const [targetRenderUrl, setTargetRenderUrl] = useState<string | null>(null);
     const [targetError, setTargetError] = useState<string | null>(null);
     const refPixels = useRef<Uint8ClampedArray | null>(null);
+    const promptRef = useRef<HTMLTextAreaElement>(null);
 
     const [round, dispatch] = useReducer(roundReducer, initialRound);
 
@@ -197,6 +198,28 @@ export default function App() {
         round.promptsUsed < MAX_PROMPTS &&
         !!effectiveKey &&
         refPixels.current != null;
+
+    const promptDisabled =
+        round.phase === 'thinking' || round.promptsUsed >= MAX_PROMPTS;
+
+    // Insert a palette colour's hex into the prompt at the caret (or appended).
+    function insertColor(hex: string) {
+        if (promptDisabled) return;
+        const insert = `${hex} `;
+        const el = promptRef.current;
+        if (!el) {
+            setDraft((prev) => prev + (prev && !prev.endsWith(' ') ? ' ' : '') + insert);
+            return;
+        }
+        const start = el.selectionStart ?? el.value.length;
+        const end = el.selectionEnd ?? start;
+        setDraft((prev) => prev.slice(0, start) + insert + prev.slice(end));
+        const caret = start + insert.length;
+        requestAnimationFrame(() => {
+            el.focus();
+            el.setSelectionRange(caret, caret);
+        });
+    }
 
     async function handleSubmit() {
         if (!canSubmit) return;
@@ -327,14 +350,21 @@ export default function App() {
                     </div>
                     <div className="palette">
                         {target.palette.map((c) => (
-                            <div className="swatch" key={c.hex}>
+                            <button
+                                type="button"
+                                className="swatch"
+                                key={c.hex}
+                                onClick={() => insertColor(c.hex)}
+                                disabled={promptDisabled}
+                                title={`Insert ${c.name} (${c.hex})`}
+                            >
                                 <span
                                     className="chip"
                                     style={{ background: c.hex }}
                                 />
                                 <span className="chip-name">{c.name}</span>
                                 <span className="chip-hex">{c.hex}</span>
-                            </div>
+                            </button>
                         ))}
                     </div>
                     <p className="hint">
@@ -417,6 +447,7 @@ export default function App() {
                     ) : (
                         <>
                             <textarea
+                                ref={promptRef}
                                 className="prompt"
                                 placeholder={
                                     round.promptsUsed === 0
@@ -432,10 +463,7 @@ export default function App() {
                                     )
                                         handleSubmit();
                                 }}
-                                disabled={
-                                    round.phase === 'thinking' ||
-                                    round.promptsUsed >= MAX_PROMPTS
-                                }
+                                disabled={promptDisabled}
                             />
                             <div className="actions">
                                 <button
