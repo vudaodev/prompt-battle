@@ -262,6 +262,34 @@ body {
     align-items: center;
     gap: 10px;
     font-size: 13px;
+    width: 100%;
+    text-align: left;
+    padding: 4px 6px;
+    margin: 0;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    cursor: pointer;
+    transition:
+        background 0.12s ease,
+        border-color 0.12s ease;
+}
+
+.swatch:hover:not(:disabled) {
+    background: var(--surface-2);
+    border-color: var(--border);
+}
+
+.swatch:focus-visible {
+    outline: none;
+    border-color: var(--accent);
+}
+
+.swatch:disabled {
+    cursor: default;
+    opacity: 0.5;
 }
 
 .chip {
