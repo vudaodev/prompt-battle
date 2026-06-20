@@ -33,7 +33,8 @@ prompt-battle-prototype/
         ├── 02-bullseye.html
         ├── 03-tricolore.html
         ├── 04-nested.html
-        └── 05-profile-card.html
+        ├── 05-profile-card.html
+        └── 06-encode.html
 ```
 
 ## Getting started
