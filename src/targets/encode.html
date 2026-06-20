@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>encode logo — CSS recreation</title>
+        <style>
+            html,
+            body {
+                height: 100%;
+                margin: 0;
+                display: grid;
+                place-items: center;
+                background: #1b1f24;
+                font-family: 'Segoe UI', system-ui, sans-serif;
+            }
+
+            /* 400 x 300 image canvas */
+            .canvas {
+                width: 400px;
+                height: 300px;
+                display: grid;
+                place-items: center;
+                background: #1b1f24;
+                overflow: hidden;
+            }
+
+            /* The gradient rounded square */
+            .logo {
+                position: relative;
+                width: 264px;
+                height: 264px;
+                border-radius: 22%;
+                /* diagonal: deeper blue at bottom-left -> bright cyan at top-right */
+                background: linear-gradient(
+                    40deg,
+                    #1f49d8 0%,
+                    #2256e0 30%,
+                    #2f86e8 60%,
+                    #34c5d8 100%
+                );
+                box-shadow: 0 24px 60px -18px rgba(34, 86, 224, 0.7);
+                overflow: hidden;
+            }
+
+            /* subtle sheen so it isn't a flat fill */
+            .logo::after {
+                content: '';
+                position: absolute;
+                inset: 0;
+                background: radial-gradient(
+                    120% 100% at 100% 0%,
+                    rgba(255, 255, 255, 0.18),
+                    rgba(255, 255, 255, 0) 55%
+                );
+            }
+
+            /* the central lowercase e */
+            .e {
+                position: absolute;
+                inset: 0;
+                display: grid;
+                place-items: center;
+                color: #fff;
+                font-size: 138px;
+                font-weight: 700;
+                line-height: 1;
+                /* push the 'e' up so the gap to each dot is equal */
+                transform: translateY(-14px);
+                z-index: 2;
+            }
+
+            /* the two accent dots, vertically aligned (directly opposite) around the e */
+            .dot {
+                position: absolute;
+                width: 19px;
+                height: 19px;
+                border-radius: 50%;
+                background: #fff;
+                left: 50%;
+                transform: translateX(-50%);
+                z-index: 2;
+            }
+            .dot.top {
+                top: 15%;
+            }
+            .dot.bottom {
+                bottom: 15%;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="canvas">
+            <div class="logo">
+                <span class="dot top"></span>
+                <span class="e">e</span>
+                <span class="dot bottom"></span>
+            </div>
+        </div>
+    </body>
+</html>
