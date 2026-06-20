@@ -221,7 +221,10 @@ export default function App() {
         const insert = `${hex} `;
         const el = promptRef.current;
         if (!el) {
-            setDraft((prev) => prev + (prev && !prev.endsWith(' ') ? ' ' : '') + insert);
+            setDraft(
+                (prev) =>
+                    prev + (prev && !prev.endsWith(' ') ? ' ' : '') + insert,
+            );
             return;
         }
         const start = el.selectionStart ?? el.value.length;
@@ -392,7 +395,9 @@ export default function App() {
                                     type="button"
                                     className="how-to-play-close"
                                     aria-label="Close"
-                                    onClick={() => howToPlayRef.current?.close()}
+                                    onClick={() =>
+                                        howToPlayRef.current?.close()
+                                    }
                                 >
                                     ×
                                 </button>
@@ -423,6 +428,15 @@ export default function App() {
                                     where your render misses, then{' '}
                                     <strong>Submit early</strong> when you’re
                                     happy — or let the timer run out.
+                                </li>
+                                <li>
+                                    The play area is a fixed{' '}
+                                    <strong>
+                                        {CANVAS.width}×{CANVAS.height}
+                                    </strong>{' '}
+                                    pixel canvas — the target and every attempt
+                                    render to those exact dimensions, so
+                                    describe your layout to that size.
                                 </li>
                             </ol>
                         </div>

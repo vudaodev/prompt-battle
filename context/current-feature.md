@@ -6,11 +6,7 @@ Not Started
 
 ## Goals
 
-Add a collapsed-by-default **How To Play** dropdown directly under the target image so unfamiliar players can click to read a short set of guidelines on how a round works. Presentation-only ([src/App.tsx](../../src/App.tsx) + small [src/styles.css](../../src/styles.css) addition), built on the native `<details>`/`<summary>` element. Full spec: [context/features/006-guidelines-dropdown.md](features/006-guidelines-dropdown.md).
-
 ## Notes
-
-No changes to scoring, the renderer, the sanitizer, the agent boundary, or the locked rules (`MAX_PROMPTS`, `ROUND_MS`).
 
 ## History
 
@@ -27,3 +23,4 @@ No changes to scoring, the renderer, the sanitizer, the agent boundary, or the l
 | 2026-06-20 | 16:48 | Set "How To Play guidelines dropdown" as current feature; spec written to `006-guidelines-dropdown.md` (collapsed `<details>` under the target image, native disclosure, presentation-only). |
 | 2026-06-20 | 16:52 | Implemented on branch `feature/guidelines-dropdown`: collapsed `<summary>How To Play</summary>` `<details>` inserted between the target `<Stage>` and `.meta` in `App.tsx`, with a 5-step `<ol>` using `ROUND_MS`/`MAX_PROMPTS`; `.how-to-play*` styles added to `styles.css` matching the dark-green tokens. `npm run build` passes (tsc strict). |
 | 2026-06-20 | 17:05 | Changed from inline dropdown to a **popup**: replaced the `<details>` with a `how-to-play-trigger` button that opens a native `<dialog>` (`showModal()`) via a new `howToPlayRef`; closes on `×`, backdrop click, and Esc. Spec `006` updated to match. `styles.css` `.how-to-play*` rules reworked for the dialog/backdrop. Build passes. |
+| 2026-06-20 | 18:53 | Completed "How To Play canvas size note" (spec `008`, branch `feature/how-to-play-canvas-size`): appended a 6th `<li>` to `how-to-play-steps` stating the play area is a fixed `{CANVAS.width}×{CANVAS.height}` pixel canvas, sourced from the imported `CANVAS` constant (no hardcoding, no new styles). `npm run build` passes. Merged to main. |
