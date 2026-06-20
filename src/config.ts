@@ -15,6 +15,12 @@ export const ROUND_MS = 10 * 60 * 1000; // 10 minutes
 export const DEFAULT_GAMMA = 2.5; // accuracy curve exponent (~2–3)
 export const DEFAULT_LAMBDA = 0.05; // per-prompt decay
 
+/** ElevenLabs Speech-to-Text (prompt-box mic). Separate from the LLM providers. */
+export const ELEVENLABS = {
+    endpoint: 'https://api.elevenlabs.io/v1/speech-to-text',
+    modelId: 'scribe_v1',
+} as const;
+
 /** The agent never sees the target. This is the entire game — guard it. */
 export const SYSTEM_PROMPT = [
   'You are a coding agent.',
@@ -76,4 +82,9 @@ export function getEnvKey(provider: ProviderId): string {
     case 'gemini':
       return import.meta.env.VITE_GEMINI_API_KEY ?? '';
   }
+}
+
+/** ElevenLabs STT key from .env (VITE_*). Empty string if unset. */
+export function getElevenLabsEnvKey(): string {
+  return import.meta.env.VITE_ELEVENLABS_API_KEY ?? '';
 }
