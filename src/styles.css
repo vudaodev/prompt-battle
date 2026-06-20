@@ -333,6 +333,104 @@ body {
     font-family: var(--mono);
 }
 
+/* ---- how-to-play popup ---- */
+.how-to-play-trigger {
+    margin: 12px 0 0;
+    width: 100%;
+    font-family: var(--mono);
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 9px 12px;
+    cursor: pointer;
+    transition:
+        color 0.12s ease,
+        border-color 0.12s ease;
+}
+
+.how-to-play-trigger:hover {
+    color: var(--text);
+    border-color: var(--muted);
+}
+
+.how-to-play-trigger:focus-visible {
+    outline: none;
+    color: var(--accent);
+    border-color: var(--accent);
+}
+
+.how-to-play-dialog {
+    border: none;
+    background: transparent;
+    padding: 0;
+    max-width: 440px;
+    width: calc(100% - 32px);
+    color: var(--text);
+}
+
+.how-to-play-dialog::backdrop {
+    background: rgba(3, 8, 5, 0.66);
+}
+
+.how-to-play-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 18px 20px 20px;
+}
+
+.how-to-play-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.how-to-play-title {
+    margin: 0;
+    font-family: var(--mono);
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+}
+
+.how-to-play-close {
+    background: transparent;
+    border: none;
+    color: var(--muted);
+    font-size: 22px;
+    line-height: 1;
+    padding: 0 4px;
+    cursor: pointer;
+}
+
+.how-to-play-close:hover,
+.how-to-play-close:focus-visible {
+    outline: none;
+    color: var(--text);
+}
+
+.how-to-play-steps {
+    margin: 14px 0 0;
+    padding: 0 0 0 20px;
+    color: var(--muted);
+    font-size: 13px;
+    line-height: 1.55;
+}
+
+.how-to-play-steps li + li {
+    margin-top: 8px;
+}
+
+.how-to-play-steps strong {
+    color: var(--text);
+    font-weight: 600;
+}
+
 /* ---- stats ---- */
 .stat-row {
     display: flex;
