@@ -198,6 +198,7 @@ body {
     border: 1px solid var(--border);
     background: #ffffff;
     max-width: 100%;
+    margin-inline: auto;
 }
 
 .stage-img,
