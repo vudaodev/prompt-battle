@@ -306,6 +306,14 @@ export default function App() {
         setShowDiff(false);
     }
 
+    // End-of-round "New round": return to the idle gate (Start button + cleared
+    // agent output), identical to a fresh load. The in-stage Start begins play.
+    function handleReset() {
+        dispatch({ type: 'RESET' });
+        setDraft('');
+        setShowDiff(false);
+    }
+
     const scorePreview =
         round.accuracy != null
             ? computeScore(
@@ -523,9 +531,9 @@ export default function App() {
                             </div>
                             <button
                                 className="btn primary"
-                                onClick={handleStart}
+                                onClick={handleReset}
                             >
-                                Start
+                                New round
                             </button>
                         </div>
                     ) : (

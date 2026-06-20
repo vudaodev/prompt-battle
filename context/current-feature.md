@@ -6,11 +6,11 @@ Not Started
 
 ## Goals
 
-Add a collapsed-by-default **How To Play** dropdown directly under the target image so unfamiliar players can click to read a short set of guidelines on how a round works. Presentation-only ([src/App.tsx](../../src/App.tsx) + small [src/styles.css](../../src/styles.css) addition), built on the native `<details>`/`<summary>` element. Full spec: [context/features/006-guidelines-dropdown.md](features/006-guidelines-dropdown.md).
+Fix the end-of-round reset so that ending a game early via **Submit early** (and equally via timeout or hitting `MAX_PROMPTS`) returns the app to the clean idle state: the Target panel's **Start** gate reappears and the **Agent output** panel clears to "No attempt yet". Root cause: the end-of-round button calls `handleStart` (`START` → running round), skipping the `idle` phase. Fix: point that button at a `RESET`-based `handleReset` and relabel it "New round"; the in-stage Start still begins the live round. State-flow change in [src/App.tsx](../../src/App.tsx) only. Full spec: [context/features/007-new-start-fix.md](features/007-new-start-fix.md).
 
 ## Notes
 
-No changes to scoring, the renderer, the sanitizer, the agent boundary, or the locked rules (`MAX_PROMPTS`, `ROUND_MS`).
+No changes to scoring, the renderer, the sanitizer, the agent boundary, or the locked rules (`MAX_PROMPTS`, `ROUND_MS`). All three end conditions funnel through `FINALIZE` → `phase: 'ended'` and share the one result button, so the single button fix covers them all.
 
 ## History
 
@@ -26,4 +26,6 @@ No changes to scoring, the renderer, the sanitizer, the agent boundary, or the l
 | 2026-06-20 | 16:34 | Completed "Start button gates the round": added an `idle` phase + `START` action so a fresh load hides the target and pauses the timer at full `ROUND_MS`; clicking **Start** reveals the target and begins the countdown atomically. The Start button now lives inside the Target `<Stage>` (placeholder where the image appears), not the toolbar — the old toolbar button was removed; the end-of-round result button also reads "Start". Prompting/swatches gated while idle. `App.tsx` + small `styles.css` addition (`.stage-start`); build passes. Merged to main. |
 | 2026-06-20 | 16:48 | Set "How To Play guidelines dropdown" as current feature; spec written to `006-guidelines-dropdown.md` (collapsed `<details>` under the target image, native disclosure, presentation-only). |
 | 2026-06-20 | 16:52 | Implemented on branch `feature/guidelines-dropdown`: collapsed `<summary>How To Play</summary>` `<details>` inserted between the target `<Stage>` and `.meta` in `App.tsx`, with a 5-step `<ol>` using `ROUND_MS`/`MAX_PROMPTS`; `.how-to-play*` styles added to `styles.css` matching the dark-green tokens. `npm run build` passes (tsc strict). |
-| 2026-06-20 | 17:05 | Changed from inline dropdown to a **popup**: replaced the `<details>` with a `how-to-play-trigger` button that opens a native `<dialog>` (`showModal()`) via a new `howToPlayRef`; closes on `×`, backdrop click, and Esc. Spec `006` updated to match. `styles.css` `.how-to-play*` rules reworked for the dialog/backdrop. Build passes. |
+| 2026-06-20 | 17:05 | Changed from inline dropdown to a **popup**: replaced the `<details>` with a `how-to-play-trigger` button that opens a native `<dialog>` (`showModal()`) via a new `howToPlayRef`; closes on `×`, backdrop click, and Esc. Spec `006` updated to match. `styles.css` `.how-to-play*` rules reworked for the dialog/backdrop. Build passes. Merged to main. |
+| 2026-06-20 | 17:17 | Set "Fix new-start/Submit-early reset" as current feature; spec written to `007-new-start-fix.md` (end-of-round button → `RESET`/idle + relabel "New round"; in-stage Start unchanged). |
+| 2026-06-20 | 17:20 | Implemented on branch `fix/new-start-reset`: added `handleReset` (dispatch `RESET` + clear draft/diff); repointed the end-of-round result button from `handleStart`/"Start" to `handleReset`/"New round" so ending early returns to the idle Start gate with a cleared Agent output. In-stage Start (`handleStart`/`START`) unchanged. `App.tsx` only; `npm run build` passes (tsc strict). |
