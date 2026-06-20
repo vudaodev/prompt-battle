@@ -8,9 +8,10 @@ import {
     PROVIDERS,
     ROUND_MS,
     SYSTEM_PROMPT,
+    COACH_SYSTEM_PROMPT,
     getEnvKey,
 } from './config';
-import type { AttemptStep, Msg, ProviderId } from './types';
+import type { AttemptStep, Msg, ProviderId, Target } from './types';
 import { targets } from './targets/manifest';
 import { callAgent } from './lib/llm';
 import { prepareHtml } from './lib/sanitize';
@@ -33,6 +34,9 @@ interface RoundState {
     accuracy: number | null;
     finalScore: number | null;
     error: string | null;
+    coachStatus: 'idle' | 'loading' | 'done' | 'error';
+    coachFeedback: string | null;
+    coachError: string | null;
 }
 
 const initialRound: RoundState = {
@@ -47,6 +51,9 @@ const initialRound: RoundState = {
     accuracy: null,
     finalScore: null,
     error: null,
+    coachStatus: 'idle',
+    coachFeedback: null,
+    coachError: null,
 };
 
 type Action =
@@ -55,7 +62,10 @@ type Action =
     | { type: 'START_THINKING' }
     | { type: 'STEP_RESULT'; step: AttemptStep; history: Msg[] }
     | { type: 'FAIL'; error: string }
-    | { type: 'FINALIZE'; score: number };
+    | { type: 'FINALIZE'; score: number }
+    | { type: 'COACH_START' }
+    | { type: 'COACH_RESULT'; feedback: string }
+    | { type: 'COACH_FAIL'; error: string };
 
 function roundReducer(state: RoundState, action: Action): RoundState {
     switch (action.type) {
@@ -88,6 +98,24 @@ function roundReducer(state: RoundState, action: Action): RoundState {
             return { ...state, phase: 'ready', error: action.error };
         case 'FINALIZE':
             return { ...state, phase: 'ended', finalScore: action.score };
+        case 'COACH_START':
+            return {
+                ...state,
+                coachStatus: 'loading',
+                coachError: null,
+            };
+        case 'COACH_RESULT':
+            return {
+                ...state,
+                coachStatus: 'done',
+                coachFeedback: action.feedback,
+            };
+        case 'COACH_FAIL':
+            return {
+                ...state,
+                coachStatus: 'error',
+                coachError: action.error,
+            };
     }
 }
 
@@ -102,9 +130,42 @@ function formatTime(ms: number): string {
 
 const pct = (a: number) => `${(a * 100).toFixed(1)}%`;
 
+/**
+ * Assemble the single user message the post-round coach analyses: the target's
+ * reference HTML (which the in-round agent never saw), the ordered prompts each
+ * tagged with the accuracy it produced, the agent's final HTML, and the final
+ * accuracy/score. One { role: 'user' } message — no multi-turn.
+ */
+function buildCoachContext(
+    target: Target,
+    steps: AttemptStep[],
+    finalScore: number | null,
+): string {
+    const finalAccuracy = steps.length ? steps[steps.length - 1].accuracy : 0;
+    const finalCode = steps.length ? steps[steps.length - 1].code : '(no attempt produced)';
+    const promptList = steps
+        .map((s) => `#${s.seq} (${pct(s.accuracy)}): "${s.prompt}"`)
+        .join('\n');
+
+    return [
+        `Target: ${target.name} (difficulty: ${target.difficulty})`,
+        '',
+        'Target reference HTML (what the player could see; the agent could not):',
+        target.html,
+        '',
+        'Player prompts in order, tagged with the accuracy each produced:',
+        promptList,
+        '',
+        "Agent's final HTML:",
+        finalCode,
+        '',
+        `Final accuracy: ${pct(finalAccuracy)} · Final score: ${finalScore ?? 0}`,
+    ].join('\n');
+}
+
 // ---------------------------------------------------------------- component
 
-export default function App() {
+export default function App({ onHome }: { onHome?: () => void } = {}) {
     // Default to the Encode target; look it up by id so this survives reordering.
     const defaultTargetIndex = Math.max(
         0,
@@ -130,6 +191,7 @@ export default function App() {
     const refPixels = useRef<Uint8ClampedArray | null>(null);
     const promptRef = useRef<HTMLTextAreaElement>(null);
     const howToPlayRef = useRef<HTMLDialogElement>(null);
+    const coachRef = useRef<HTMLDialogElement>(null);
 
     const [round, dispatch] = useReducer(roundReducer, initialRound);
 
@@ -317,6 +379,35 @@ export default function App() {
         setShowDiff(false);
     }
 
+    // Post-round only: hand the coach the target + the player's prompts and ask
+    // for feedback. Reuses the active provider/model/key; no scored attempt.
+    async function handleCoach() {
+        if (!effectiveKey || round.steps.length === 0) return;
+        dispatch({ type: 'COACH_START' });
+        try {
+            const content = buildCoachContext(
+                target,
+                round.steps,
+                round.finalScore,
+            );
+            const text = await callAgent({
+                provider,
+                model,
+                apiKey: effectiveKey,
+                system: COACH_SYSTEM_PROMPT,
+                messages: [{ role: 'user', content }],
+            });
+            dispatch({ type: 'COACH_RESULT', feedback: text.trim() });
+            // Reveal the feedback in a scrollable modal once it's ready.
+            coachRef.current?.showModal();
+        } catch (e) {
+            dispatch({
+                type: 'COACH_FAIL',
+                error: e instanceof Error ? e.message : 'Something went wrong.',
+            });
+        }
+    }
+
     const scorePreview =
         round.accuracy != null
             ? computeScore(
@@ -330,6 +421,7 @@ export default function App() {
     return (
         <div className="app">
             <Toolbar
+                onHome={onHome}
                 provider={provider}
                 model={model}
                 keySource={keySource}
@@ -549,6 +641,53 @@ export default function App() {
                             >
                                 New round
                             </button>
+
+                            {round.steps.length > 0 && (
+                                <div className="coach">
+                                    {round.coachStatus === 'loading' ? (
+                                        <button
+                                            className="btn"
+                                            disabled
+                                        >
+                                            Analysing your prompts…
+                                        </button>
+                                    ) : round.coachStatus === 'done' &&
+                                      round.coachFeedback != null ? (
+                                        <button
+                                            className="btn"
+                                            onClick={() =>
+                                                coachRef.current?.showModal()
+                                            }
+                                        >
+                                            View feedback
+                                        </button>
+                                    ) : (
+                                        <>
+                                            {round.coachStatus === 'error' &&
+                                                round.coachError && (
+                                                    <div className="error">
+                                                        {round.coachError}
+                                                    </div>
+                                                )}
+                                            <button
+                                                className="btn"
+                                                onClick={handleCoach}
+                                                disabled={!effectiveKey}
+                                            >
+                                                {round.coachStatus === 'error'
+                                                    ? 'Retry feedback'
+                                                    : 'Get feedback'}
+                                            </button>
+                                            {!effectiveKey && (
+                                                <p className="hint warn">
+                                                    Add an API key to get
+                                                    coaching feedback.
+                                                </p>
+                                            )}
+                                        </>
+                                    )}
+                                </div>
+                            )}
                         </div>
                     ) : (
                         <>
@@ -602,6 +741,33 @@ export default function App() {
                             <p className="hint">⌘/Ctrl + Enter to send.</p>
                         </>
                     )}
+
+                    <dialog
+                        ref={coachRef}
+                        className="coach-dialog"
+                        onClick={(e) => {
+                            // Close when the backdrop (the dialog itself) is clicked.
+                            if (e.target === coachRef.current)
+                                coachRef.current?.close();
+                        }}
+                    >
+                        <div className="coach-card">
+                            <div className="coach-head">
+                                <h2 className="coach-title">Prompt coach</h2>
+                                <button
+                                    type="button"
+                                    className="coach-close"
+                                    aria-label="Close"
+                                    onClick={() => coachRef.current?.close()}
+                                >
+                                    ×
+                                </button>
+                            </div>
+                            <div className="coach-feedback">
+                                {round.coachFeedback}
+                            </div>
+                        </div>
+                    </dialog>
                 </section>
 
                 {/* ---- agent output ---- */}
@@ -690,6 +856,7 @@ function Stat({
 }
 
 interface ToolbarProps {
+    onHome?: () => void;
     provider: ProviderId;
     model: string;
     keySource: 'pasted' | 'env' | 'none';
@@ -710,7 +877,18 @@ function Toolbar(props: ToolbarProps) {
     const cfg = PROVIDERS.find((p) => p.id === props.provider)!;
     return (
         <header className="toolbar">
-            <div className="brand">Prompt&nbsp;Battle</div>
+            {props.onHome ? (
+                <button
+                    type="button"
+                    className="brand brand-link"
+                    onClick={props.onHome}
+                    title="Back to home"
+                >
+                    Prompt&nbsp;Battle
+                </button>
+            ) : (
+                <div className="brand">Prompt&nbsp;Battle</div>
+            )}
 
             <div className="controls">
                 <label className="field">

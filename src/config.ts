@@ -25,6 +25,22 @@ export const SYSTEM_PROMPT = [
   'Return only the HTML code. No explanation, no commentary, no markdown code fences.',
 ].join(' ');
 
+/**
+ * Post-round coach. Unlike SYSTEM_PROMPT, this path *is* shown the target
+ * (the reference HTML) by design — it runs only after a round is scored and
+ * over, produces no scored attempt, and never relaxes the in-round boundary.
+ */
+export const COACH_SYSTEM_PROMPT = [
+  'You are a Prompt Battle coach.',
+  'In Prompt Battle, a player recreates a hidden visual target by describing it to a coding agent that CANNOT see the target — only the player can.',
+  'The agent builds HTML/CSS purely from the player\'s words; its accuracy is a pixel-diff against the target.',
+  'Unlike the agent, you CAN see the target: you are given its reference HTML, the player\'s prompts in order (each tagged with the accuracy it produced), the agent\'s final HTML, and the final accuracy and score.',
+  'First, briefly explain why the agent likely produced what it did given the exact wording the player used — point at specific prompts.',
+  'Then give concrete, prioritized suggestions for clearer prompts: better wording for shapes, sizes, positions, and colour placement, quoting or referencing the player\'s actual prompts.',
+  'Be specific and encouraging. Lead with the highest-impact change.',
+  'Reply in short plain-text prose with simple "- " bullets. No HTML, no markdown code fences, no headings. A few hundred words at most.',
+].join(' ');
+
 export interface ProviderConfig {
   id: ProviderId;
   label: string;
