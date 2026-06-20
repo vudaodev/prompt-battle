@@ -613,7 +613,8 @@ export default function App({ onHome }: { onHome?: () => void } = {}) {
                     </div>
                     <p className="hint">
                         Exact hex codes are shown on purpose — describe shape,
-                        size and position, not colour.
+                        size and position, not colour. Click a colour, or
+                        dictate it, to drop it into the chatbox.
                     </p>
                 </section>
 
