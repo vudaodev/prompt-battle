@@ -19,7 +19,7 @@ import { computeDiff, computeScore } from './lib/scoring';
 
 // ---------------------------------------------------------------- round state
 
-type Phase = 'ready' | 'thinking' | 'ended';
+type Phase = 'idle' | 'ready' | 'thinking' | 'ended';
 
 interface RoundState {
     phase: Phase;
@@ -36,7 +36,7 @@ interface RoundState {
 }
 
 const initialRound: RoundState = {
-    phase: 'ready',
+    phase: 'idle',
     startedAt: null,
     promptsUsed: 0,
     history: [],
@@ -51,6 +51,7 @@ const initialRound: RoundState = {
 
 type Action =
     | { type: 'RESET' }
+    | { type: 'START' }
     | { type: 'START_THINKING' }
     | { type: 'STEP_RESULT'; step: AttemptStep; history: Msg[] }
     | { type: 'FAIL'; error: string }
@@ -60,6 +61,10 @@ function roundReducer(state: RoundState, action: Action): RoundState {
     switch (action.type) {
         case 'RESET':
             return initialRound;
+        case 'START':
+            // Begin a fresh, running round: reset prior state, reveal the
+            // target (phase ≠ idle), and start the countdown in one render.
+            return { ...initialRound, phase: 'ready', startedAt: Date.now() };
         case 'START_THINKING':
             return {
                 ...state,
@@ -205,7 +210,9 @@ export default function App() {
         refPixels.current != null;
 
     const promptDisabled =
-        round.phase === 'thinking' || round.promptsUsed >= MAX_PROMPTS;
+        round.phase === 'idle' ||
+        round.phase === 'thinking' ||
+        round.promptsUsed >= MAX_PROMPTS;
 
     // Insert a palette colour's hex into the prompt at the caret (or appended).
     function insertColor(hex: string) {
@@ -292,8 +299,8 @@ export default function App() {
         });
     }
 
-    function handleNewRound() {
-        dispatch({ type: 'RESET' });
+    function handleStart() {
+        dispatch({ type: 'START' });
         setDraft('');
         setShowDiff(false);
     }
@@ -328,7 +335,6 @@ export default function App() {
                 onGamma={setGamma}
                 onLambda={setLambda}
                 onTarget={setTargetIndex}
-                onNewRound={handleNewRound}
             />
 
             <main className="grid">
@@ -336,7 +342,19 @@ export default function App() {
                 <section className="panel">
                     <h2 className="panel-title">Target</h2>
                     <Stage>
-                        {targetRenderUrl ? (
+                        {round.phase === 'idle' ? (
+                            <div className="stage-empty stage-start">
+                                <button
+                                    className="btn primary"
+                                    onClick={handleStart}
+                                >
+                                    Start
+                                </button>
+                                <p className="stage-start-hint">
+                                    Reveals the target and starts the timer.
+                                </p>
+                            </div>
+                        ) : targetRenderUrl ? (
                             <img
                                 className="stage-img"
                                 src={targetRenderUrl}
@@ -444,9 +462,9 @@ export default function App() {
                             </div>
                             <button
                                 className="btn primary"
-                                onClick={handleNewRound}
+                                onClick={handleStart}
                             >
-                                New round
+                                Start
                             </button>
                         </div>
                     ) : (
@@ -603,7 +621,6 @@ interface ToolbarProps {
     onGamma: (n: number) => void;
     onLambda: (n: number) => void;
     onTarget: (i: number) => void;
-    onNewRound: () => void;
 }
 
 function Toolbar(props: ToolbarProps) {
@@ -704,10 +721,6 @@ function Toolbar(props: ToolbarProps) {
                         onChange={(e) => props.onLambda(Number(e.target.value))}
                     />
                 </label>
-
-                <button className="btn ghost" onClick={props.onNewRound}>
-                    New round
-                </button>
             </div>
         </header>
     );
