@@ -1,6 +1,6 @@
-# Prompt Battle — Prototype
+# Prompt Battle
 
-A browser-only prototype of Prompt Battle: recreate a hidden visual target by directing an AI coding agent in plain language. You can see the target; the agent can't. Your only lever is description.
+A prototype of Prompt Battle: recreate a hidden visual target by directing an AI coding agent in plain language. You can see the target; the agent can't. Your only lever is description.
 
 Runs entirely in the browser — no backend. The agent call goes straight from the browser to whichever provider you pick (Claude, OpenAI, or Gemini), using a key from your local `.env`.
 
