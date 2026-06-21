@@ -756,7 +756,11 @@ body {
     position: sticky;
     top: 0;
     z-index: 5;
-    background: linear-gradient(180deg, var(--bg) 70%, transparent);
+    /* Frosted glass: near-opaque base so scrolled content/dividers blur away
+       instead of showing through under the border line. --bg #060b08 @ ~0.82 */
+    background: rgba(6, 11, 8, 0.82);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
     border-bottom: 1px solid var(--border);
 }
 
