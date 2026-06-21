@@ -15,9 +15,17 @@ export async function callAgent(args: {
   apiKey: string;
   system: string;
   messages: Msg[];
+  /** Route through the server-side proxy (api/llm.ts) instead of calling the
+   *  provider directly. Used when deployed so the key never reaches the browser. */
+  useProxy?: boolean;
 }): Promise<string> {
-  const { provider, model, apiKey, system, messages } = args;
-  if (!apiKey) throw new Error('No API key for the selected provider.');
+  const { provider, model, apiKey, system, messages, useProxy } = args;
+
+  // No client-side key: in proxy mode the server supplies it; otherwise it's an error.
+  if (!apiKey) {
+    if (useProxy) return callProxy(provider, model, system, messages);
+    throw new Error('No API key for the selected provider.');
+  }
 
   switch (provider) {
     case 'anthropic':
@@ -30,6 +38,16 @@ export async function callAgent(args: {
 }
 
 const MAX_TOKENS = 2048;
+
+async function callProxy(provider: ProviderId, model: string, system: string, messages: Msg[]) {
+  const res = await fetch('/api/llm', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ provider, model, system, messages }),
+  });
+  const data = await readJson(res, 'Proxy');
+  return data.text ?? '';
+}
 
 async function callAnthropic(model: string, apiKey: string, system: string, messages: Msg[]) {
   const res = await fetch('https://api.anthropic.com/v1/messages', {

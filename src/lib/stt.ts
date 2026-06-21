@@ -11,11 +11,19 @@ import { ELEVENLABS } from '../config';
 export async function transcribeAudio({
     apiKey,
     audio,
+    useProxy,
 }: {
     apiKey: string;
     audio: Blob;
+    /** Route through the server-side proxy (api/stt.ts) instead of calling
+     *  ElevenLabs directly, so the key never reaches the browser. */
+    useProxy?: boolean;
 }): Promise<string> {
-    if (!apiKey) throw new Error('No ElevenLabs API key.');
+    // No client-side key: in proxy mode the server supplies it; else it's an error.
+    if (!apiKey) {
+        if (useProxy) return transcribeViaProxy(audio);
+        throw new Error('No ElevenLabs API key.');
+    }
 
     const form = new FormData();
     form.append('model_id', ELEVENLABS.modelId);
@@ -30,6 +38,21 @@ export async function transcribeAudio({
     if (!res.ok) {
         const body = await res.text().catch(() => '');
         throw new Error(`ElevenLabs error ${res.status}: ${body.slice(0, 300)}`);
+    }
+    const data = await res.json();
+    return data.text ?? '';
+}
+
+/** Send the raw audio bytes to the server proxy, which adds the key and forwards. */
+async function transcribeViaProxy(audio: Blob): Promise<string> {
+    const res = await fetch('/api/stt', {
+        method: 'POST',
+        headers: { 'content-type': audio.type || 'application/octet-stream' },
+        body: audio,
+    });
+    if (!res.ok) {
+        const body = await res.text().catch(() => '');
+        throw new Error(`STT proxy error ${res.status}: ${body.slice(0, 300)}`);
     }
     const data = await res.json();
     return data.text ?? '';
