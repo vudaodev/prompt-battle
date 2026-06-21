@@ -1,4 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
+import { sameOriginOk } from './_guard';
 
 /**
  * Server-side ElevenLabs Speech-to-Text proxy (Vercel Serverless Function).
@@ -20,6 +21,10 @@ const MODEL_ID = 'scribe_v1';
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') {
     res.status(405).json({ error: 'Method not allowed' });
+    return;
+  }
+  if (!sameOriginOk(req)) {
+    res.status(403).json({ error: 'Forbidden' });
     return;
   }
   try {

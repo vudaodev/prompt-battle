@@ -1,4 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
+import { sameOriginOk } from './_guard';
 
 /**
  * Server-side LLM proxy (Vercel Serverless Function).
@@ -24,6 +25,10 @@ interface Msg {
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') {
     res.status(405).json({ error: 'Method not allowed' });
+    return;
+  }
+  if (!sameOriginOk(req)) {
+    res.status(403).json({ error: 'Forbidden' });
     return;
   }
   try {

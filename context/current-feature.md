@@ -2,13 +2,9 @@
 
 ## Status
 
-In Progress
+Not Started
 
 ## Goals
-
-Mock employee-facing progress dashboard (spec `015`) — a new React page in the
-website's dark-green style, focused on the AI Skill Score + trend, from the
-individual employee's perspective.
 
 ## Notes
 
@@ -36,3 +32,4 @@ individual employee's perspective.
 | 2026-06-20 | 23:50 | Completed "Colour-name → exact hex resolution" (spec `013`, branch `feature/colour-match`): added module-level `annotatePaletteColors(prompt, palette)` in `App.tsx` — appends ` (hex)` after the first word-boundary, case-insensitive match of each palette colour name (regex-escaped), skipping any colour whose hex is already present (no double-annotation after a swatch click). `handleMic` runs the dictated transcript through it before appending to the draft, so the player sees e.g. `azure (#2256e0)` beside what they said and it flows into the prompt log; `handleSubmit` also resolves typed colour names before building the agent `messages`/`history`. Agent still never receives the full palette — in-round blindness boundary preserved; renderer/scoring/sanitizer/STT untouched. `App.tsx` only (+ spec doc). `npm run build` passes (tsc strict); verified live on localhost — saying a colour shows its hex in the prompt box. Rebased onto latest main; merged to main. |
 | 2026-06-21 | 07:21 | Implemented "Frosted-glass sticky nav" (spec `014`, branch `feature/frosted-glass`): fixed the landing-page sticky nav whose `border-bottom` line drifted over the hero buttons while scrolling and briefly showed two parallel lines. Root cause: `.landing-nav` `background: linear-gradient(180deg, var(--bg) 70%, transparent)` left the bottom 30% transparent, so scrolled content/dividers showed through sharply under the hard line. Replaced with a frosted-glass treatment — `background: rgba(6,11,8,0.82)` (var(--bg) #060b08 + alpha) plus `backdrop-filter: blur(12px)` (+ `-webkit-` prefix); kept the single `border-bottom`. `styles.css` `.landing-nav` only; presentational, no JSX/TS/dependency changes. `npm run build` passes (tsc strict). |
 | 2026-06-21 | 08:02 | Set "Employee progress dashboard (mock)" as current feature; spec written to `015-employee-dashboard.md` (new presentational React page, dark-green style, focus on AI Skill Score + 8-week trend, from the individual employee's perspective). |
+| 2026-06-21 | 09:25 | Completed "Proxy hardening + key-leak guards" (branch `fix/proxy-hardening`), from a security audit of the codebase. **#1 open proxy:** new `api/_guard.ts` `sameOriginOk(req)` (rejects requests whose `Origin` host ≠ request host and ≠ `ALLOWED_ORIGIN`; POST-only routes always carry Origin, so missing Origin = non-browser → reject); wired into `api/llm.ts` and `api/stt.ts` as a `403` right after the method check, blocking anonymous curl/cross-site abuse of the server-side keys. **#2 VITE_ leak guard:** `config.ts` now `console.warn`s at module load if `USE_PROXY` is on while any `VITE_*` provider/ElevenLabs key is set (would inline into the public bundle). **#4 build gate:** new `tsconfig.api.json` (includes `api/`, uses `@vercel/node` types) added to the `build` script (`tsc && tsc -p tsconfig.api.json && vite build`) so the previously-unchecked proxy code is type-checked. Audit also confirmed no committed secrets (`.env` gitignored, only `.env.example` tracked) and no hardcoded keys. Required `npm install` first (the earlier pull added `@vercel/node` to package.json without installing). `npm run build` passes (both tsc passes + vite). No app/game-logic/agent-boundary changes. Also reset stale `015` In-Progress status (the dashboard was already merged via pull). |
