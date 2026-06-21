@@ -4,7 +4,7 @@ A browser-only prototype of Prompt Battle: recreate a hidden visual target by di
 
 Runs entirely in the browser — no backend. The agent call goes straight from the browser to whichever provider you pick (Claude, OpenAI, or Gemini), using a key from your local `.env`.
 
-## File structure
+## File Structure
 
 ```
 prompt-battle-prototype/
