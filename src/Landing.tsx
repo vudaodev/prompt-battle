@@ -12,7 +12,13 @@ import { targets } from './targets/manifest';
  * off to the game via Start CTAs. No game logic, no rendering of targets; the
  * hero preview is a hand-built decorative mock, never a real target render.
  */
-export default function Landing({ onStart }: { onStart: () => void }) {
+export default function Landing({
+    onStart,
+    onDashboard,
+}: {
+    onStart: (targetId?: string) => void;
+    onDashboard: () => void;
+}) {
     const minutes = Math.round(ROUND_MS / 60000);
 
     // Smooth-scroll to an in-page section (nav links + "See how it works").
@@ -53,6 +59,12 @@ export default function Landing({ onStart }: { onStart: () => void }) {
             name: 'Time',
             body: `A ${minutes}-minute round. Time is a leaderboard tiebreaker only — never folded into the score.`,
         },
+    ];
+
+    // Targets we haven't built yet — shown as locked teasers, not playable.
+    const comingSoon = [
+        { name: 'London Eye', kind: 'scene' },
+        { name: 'World Cup', kind: 'scene' },
     ];
 
     const features = [
@@ -105,8 +117,14 @@ export default function Landing({ onStart }: { onStart: () => void }) {
                     >
                         Challenges
                     </button>
+                    <button
+                        className="landing-nav-link"
+                        onClick={onDashboard}
+                    >
+                        My progress
+                    </button>
                 </div>
-                <button className="btn primary" onClick={onStart}>
+                <button className="btn primary" onClick={() => onStart()}>
                     Play now
                 </button>
             </nav>
@@ -132,7 +150,7 @@ export default function Landing({ onStart }: { onStart: () => void }) {
                         speak every prompt with built-in voice input.
                     </p>
                     <div className="landing-cta">
-                        <button className="btn primary" onClick={onStart}>
+                        <button className="btn primary" onClick={() => onStart()}>
                             Play now
                         </button>
                         <button
@@ -226,18 +244,39 @@ export default function Landing({ onStart }: { onStart: () => void }) {
             <section className="landing-section" id="challenges">
                 <h2 className="landing-h2">Pick your fight.</h2>
                 <p className="landing-sub">
-                    {targets.length} targets, easy to hard. Choose any from the
-                    toolbar once you&rsquo;re in.
+                    {targets.length} targets, easy to hard. Click one to jump
+                    straight in, or switch any time from the toolbar.
                 </p>
                 <div className="landing-cards">
                     {targets.map((t) => (
-                        <div className="landing-card" key={t.id}>
+                        <button
+                            type="button"
+                            className="landing-card"
+                            key={t.id}
+                            onClick={() => onStart(t.id)}
+                            aria-label={`Play ${t.name}`}
+                        >
                             <h3 className="landing-card-name">{t.name}</h3>
                             <div className="landing-card-meta">
                                 <span className={`badge diff-${t.difficulty}`}>
                                     {t.difficulty}
                                 </span>
                                 <span className="badge ghost">{t.kind}</span>
+                            </div>
+                        </button>
+                    ))}
+                    {comingSoon.map((c) => (
+                        <div
+                            className="landing-card is-coming-soon"
+                            key={c.name}
+                            aria-disabled="true"
+                        >
+                            <span className="landing-card-soon">
+                                Coming soon
+                            </span>
+                            <h3 className="landing-card-name">{c.name}</h3>
+                            <div className="landing-card-meta">
+                                <span className="badge ghost">{c.kind}</span>
                             </div>
                         </div>
                     ))}
@@ -252,7 +291,7 @@ export default function Landing({ onStart }: { onStart: () => void }) {
                     One target, your words, a blind agent. The perfect score is
                     out there.
                 </p>
-                <button className="btn primary" onClick={onStart}>
+                <button className="btn primary" onClick={() => onStart()}>
                     Play now
                 </button>
             </section>
@@ -291,7 +330,7 @@ export default function Landing({ onStart }: { onStart: () => void }) {
                         <span className="landing-foot-head">Play</span>
                         <button
                             className="landing-foot-link"
-                            onClick={onStart}
+                            onClick={() => onStart()}
                         >
                             Start a round
                         </button>

@@ -2,9 +2,13 @@
 
 ## Status
 
-Not Started
+In Progress
 
 ## Goals
+
+Mock employee-facing progress dashboard (spec `015`) — a new React page in the
+website's dark-green style, focused on the AI Skill Score + trend, from the
+individual employee's perspective.
 
 ## Notes
 
@@ -31,3 +35,4 @@ Not Started
 | 2026-06-20 | 22:41 | Implemented "Landing Page Redesign" (spec `011`, branch `feature/landing-page-redesign`): rebuilt `src/Landing.tsx` to the richer marketing layout from `promptlandingpage.png`, recoloured to the dark-green palette (no orange/navy, no new CSS vars). Added sticky nav (brand + smooth-scroll anchor links + Play now), two-column hero (split headline w/ `--accent` second line, lede, Play now + ghost "See how it works", decorative CSS game-preview mock — square+circle+faux prompt bar, not a real render), "Three moves" step cards + callout note, "Scored on what actually matters." (formula card `Score = 1000 · A^γ · (1 − λ(P − 1))` with `DEFAULT_GAMMA`/`DEFAULT_LAMBDA` legend + Accuracy/Prompts/Time metric list, time noted as tiebreaker), six-card "Built for the grind." grid, challenge cards (unchanged data), closing CTA band "describe your way to 1000?", and footer (brand + anchor/Start columns). Numbers sourced from `CANVAS`/`MAX_PROMPTS`/`ROUND_MS`/`DEFAULT_GAMMA`/`DEFAULT_LAMBDA`. Expanded `.landing*` CSS block with new nav/hero/preview/scoring/features/band/footer rules + `@media (max-width: 860px)` (hero/scoring → 1 col, nav links hidden). `Landing` contract + `Root.tsx` unchanged; presentational only (no renderer/scoring/provider imports). Added `scroll-margin-top: 80px` to `.landing-section` so the sticky nav doesn't overlap section headings on anchor-link/`scrollIntoView` navigation. `npm run build` passes (tsc strict). Verified live on localhost — desktop + mobile (430px) layouts render in the dark-green palette with no overflow. Merged to main. |
 | 2026-06-20 | 23:50 | Completed "Colour-name → exact hex resolution" (spec `013`, branch `feature/colour-match`): added module-level `annotatePaletteColors(prompt, palette)` in `App.tsx` — appends ` (hex)` after the first word-boundary, case-insensitive match of each palette colour name (regex-escaped), skipping any colour whose hex is already present (no double-annotation after a swatch click). `handleMic` runs the dictated transcript through it before appending to the draft, so the player sees e.g. `azure (#2256e0)` beside what they said and it flows into the prompt log; `handleSubmit` also resolves typed colour names before building the agent `messages`/`history`. Agent still never receives the full palette — in-round blindness boundary preserved; renderer/scoring/sanitizer/STT untouched. `App.tsx` only (+ spec doc). `npm run build` passes (tsc strict); verified live on localhost — saying a colour shows its hex in the prompt box. Rebased onto latest main; merged to main. |
 | 2026-06-21 | 07:21 | Implemented "Frosted-glass sticky nav" (spec `014`, branch `feature/frosted-glass`): fixed the landing-page sticky nav whose `border-bottom` line drifted over the hero buttons while scrolling and briefly showed two parallel lines. Root cause: `.landing-nav` `background: linear-gradient(180deg, var(--bg) 70%, transparent)` left the bottom 30% transparent, so scrolled content/dividers showed through sharply under the hard line. Replaced with a frosted-glass treatment — `background: rgba(6,11,8,0.82)` (var(--bg) #060b08 + alpha) plus `backdrop-filter: blur(12px)` (+ `-webkit-` prefix); kept the single `border-bottom`. `styles.css` `.landing-nav` only; presentational, no JSX/TS/dependency changes. `npm run build` passes (tsc strict). |
+| 2026-06-21 | 08:02 | Set "Employee progress dashboard (mock)" as current feature; spec written to `015-employee-dashboard.md` (new presentational React page, dark-green style, focus on AI Skill Score + 8-week trend, from the individual employee's perspective). |

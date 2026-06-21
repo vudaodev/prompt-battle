@@ -195,11 +195,20 @@ function buildCoachContext(
 /** Where the active key comes from. 'proxy' = held server-side (deployed). */
 type KeySource = 'pasted' | 'env' | 'proxy' | 'none';
 
-export default function App({ onHome }: { onHome?: () => void } = {}) {
-    // Default to the Encode target; look it up by id so this survives reordering.
+export default function App({
+    onHome,
+    onProgress,
+    initialTargetId,
+}: {
+    onHome?: () => void;
+    onProgress?: () => void;
+    initialTargetId?: string;
+} = {}) {
+    // Default to the Encode target (or a caller-supplied one, e.g. a dashboard
+    // drill); look it up by id so this survives reordering.
     const defaultTargetIndex = Math.max(
         0,
-        targets.findIndex((t) => t.id === 'encode'),
+        targets.findIndex((t) => t.id === (initialTargetId ?? 'encode')),
     );
     const [targetIndex, setTargetIndex] = useState(defaultTargetIndex);
     const target = targets[targetIndex];
@@ -511,6 +520,7 @@ export default function App({ onHome }: { onHome?: () => void } = {}) {
         <div className="app">
             <Toolbar
                 onHome={onHome}
+                onProgress={onProgress}
                 provider={provider}
                 model={model}
                 keySource={keySource}
@@ -520,6 +530,13 @@ export default function App({ onHome }: { onHome?: () => void } = {}) {
                 gamma={gamma}
                 lambda={lambda}
                 targetIndex={targetIndex}
+                accuracy={round.accuracy}
+                promptsUsed={round.promptsUsed}
+                remainingMs={remainingMs}
+                phase={round.phase}
+                onStart={handleStart}
+                onFinalize={handleFinalize}
+                onReset={handleReset}
                 disabledModelSwitch={round.phase === 'thinking'}
                 onProvider={(p) => {
                     setProvider(p);
@@ -569,13 +586,6 @@ export default function App({ onHome }: { onHome?: () => void } = {}) {
                             </div>
                         )}
                     </Stage>
-                    <button
-                        type="button"
-                        className="how-to-play-trigger"
-                        onClick={() => howToPlayRef.current?.showModal()}
-                    >
-                        How To Play
-                    </button>
                     <dialog
                         ref={howToPlayRef}
                         className="how-to-play-dialog"
@@ -640,29 +650,46 @@ export default function App({ onHome }: { onHome?: () => void } = {}) {
                             </ol>
                         </div>
                     </dialog>
-                    <div className="meta">
-                        <span className="badge">{target.name}</span>
-                        <span className="badge ghost">{target.difficulty}</span>
-                        <span className="badge ghost">{target.kind}</span>
+                    <div className="meta-row">
+                        <div className="meta-box">
+                            <div className="meta">
+                                <span className="badge">{target.name}</span>
+                                <span className="badge ghost">
+                                    {target.difficulty}
+                                </span>
+                                <span className="badge ghost">
+                                    {target.kind}
+                                </span>
+                            </div>
+                        </div>
+                        <button
+                            type="button"
+                            className="how-to-play-trigger"
+                            onClick={() => howToPlayRef.current?.showModal()}
+                        >
+                            How To Play
+                        </button>
                     </div>
-                    <div className="palette">
-                        {target.palette.map((c) => (
-                            <button
-                                type="button"
-                                className="swatch"
-                                key={c.hex}
-                                onClick={() => insertColor(c.hex)}
-                                disabled={promptDisabled}
-                                title={`Insert ${c.name} (${c.hex})`}
-                            >
-                                <span
-                                    className="chip"
-                                    style={{ background: c.hex }}
-                                />
-                                <span className="chip-name">{c.name}</span>
-                                <span className="chip-hex">{c.hex}</span>
-                            </button>
-                        ))}
+                    <div className="palette-box">
+                        <div className="palette">
+                            {target.palette.map((c) => (
+                                <button
+                                    type="button"
+                                    className="swatch"
+                                    key={c.hex}
+                                    onClick={() => insertColor(c.hex)}
+                                    disabled={promptDisabled}
+                                    title={`Insert ${c.name} (${c.hex})`}
+                                >
+                                    <span
+                                        className="chip"
+                                        style={{ background: c.hex }}
+                                    />
+                                    <span className="chip-name">{c.name}</span>
+                                    <span className="chip-hex">{c.hex}</span>
+                                </button>
+                            ))}
+                        </div>
                     </div>
                     <p className="hint">
                         Exact hex codes are shown on purpose — describe shape,
@@ -674,26 +701,6 @@ export default function App({ onHome }: { onHome?: () => void } = {}) {
                 {/* ---- direct the agent ---- */}
                 <section className="panel">
                     <h2 className="panel-title">Direct the agent</h2>
-                    <div className="stat-row">
-                        <Stat
-                            label="Accuracy"
-                            value={
-                                round.accuracy != null
-                                    ? pct(round.accuracy)
-                                    : '—'
-                            }
-                            accent="teal"
-                        />
-                        <Stat
-                            label="Prompts"
-                            value={`${round.promptsUsed}/${MAX_PROMPTS}`}
-                        />
-                        <Stat
-                            label="Time left"
-                            value={formatTime(remainingMs)}
-                            accent={remainingMs < 60_000 ? 'amber' : undefined}
-                        />
-                    </div>
 
                     <div className="log">
                         {round.steps.length === 0 &&
@@ -984,6 +991,7 @@ function Stat({
 
 interface ToolbarProps {
     onHome?: () => void;
+    onProgress?: () => void;
     provider: ProviderId;
     model: string;
     keySource: KeySource;
@@ -993,6 +1001,13 @@ interface ToolbarProps {
     gamma: number;
     lambda: number;
     targetIndex: number;
+    accuracy: number | null;
+    promptsUsed: number;
+    remainingMs: number;
+    phase: Phase;
+    onStart: () => void;
+    onFinalize: () => void;
+    onReset: () => void;
     disabledModelSwitch: boolean;
     onProvider: (p: ProviderId) => void;
     onModel: (m: string) => void;
@@ -1058,6 +1073,58 @@ function Toolbar(props: ToolbarProps) {
                     </select>
                 </label>
             </div>
+
+            <div className="toolbar-stats">
+                <div className="toolbar-stat teal">
+                    <span className="toolbar-stat-label">Accuracy</span>
+                    <span className="toolbar-stat-value">
+                        {props.accuracy != null ? pct(props.accuracy) : '—'}
+                    </span>
+                </div>
+                <div className="toolbar-stat">
+                    <span className="toolbar-stat-label">Prompts</span>
+                    <span className="toolbar-stat-value">
+                        {props.promptsUsed}/{MAX_PROMPTS}
+                    </span>
+                </div>
+                <div
+                    className={`toolbar-stat ${props.remainingMs < 60_000 ? 'amber' : ''}`}
+                >
+                    <span className="toolbar-stat-label">Time left</span>
+                    <span className="toolbar-stat-value">
+                        {formatTime(props.remainingMs)}
+                    </span>
+                </div>
+            </div>
+
+            {props.phase === 'idle' ? (
+                <button className="btn primary" onClick={props.onStart}>
+                    Start
+                </button>
+            ) : props.phase === 'ended' ? (
+                <button className="btn primary" onClick={props.onReset}>
+                    New round
+                </button>
+            ) : (
+                <button
+                    className="btn primary"
+                    onClick={props.onFinalize}
+                    disabled={props.phase === 'thinking'}
+                >
+                    Submit Early
+                </button>
+            )}
+
+            {props.onProgress && (
+                <button
+                    type="button"
+                    className="btn"
+                    onClick={props.onProgress}
+                    title="View your dashboard"
+                >
+                    My Progress
+                </button>
+            )}
 
             <div className="settings" ref={settingsRef}>
                 <button
@@ -1200,29 +1267,35 @@ function Toolbar(props: ToolbarProps) {
                     />
                 </label>
 
-                <label className="field narrow">
-                    <span>γ {props.gamma.toFixed(1)}</span>
-                    <input
-                        type="range"
-                        min={1}
-                        max={4}
-                        step={0.1}
-                        value={props.gamma}
-                        onChange={(e) => props.onGamma(Number(e.target.value))}
-                    />
-                </label>
+                <div className="field-row">
+                    <label className="field narrow">
+                        <span>γ {props.gamma.toFixed(1)}</span>
+                        <input
+                            type="range"
+                            min={1}
+                            max={4}
+                            step={0.1}
+                            value={props.gamma}
+                            onChange={(e) =>
+                                props.onGamma(Number(e.target.value))
+                            }
+                        />
+                    </label>
 
-                <label className="field narrow">
-                    <span>λ {props.lambda.toFixed(2)}</span>
-                    <input
-                        type="range"
-                        min={0}
-                        max={0.2}
-                        step={0.01}
-                        value={props.lambda}
-                        onChange={(e) => props.onLambda(Number(e.target.value))}
-                    />
-                        </label>
+                    <label className="field narrow">
+                        <span>λ {props.lambda.toFixed(2)}</span>
+                        <input
+                            type="range"
+                            min={0}
+                            max={0.2}
+                            step={0.01}
+                            value={props.lambda}
+                            onChange={(e) =>
+                                props.onLambda(Number(e.target.value))
+                            }
+                        />
+                    </label>
+                </div>
                     </div>
                 )}
             </div>
