@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { sameOriginOk } from './_guard';
+import { sameOriginOk } from './_guard.js';
 
 /**
  * Server-side LLM proxy (Vercel Serverless Function).
