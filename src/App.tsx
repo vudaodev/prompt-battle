@@ -9,6 +9,7 @@ import {
     ROUND_MS,
     SYSTEM_PROMPT,
     COACH_SYSTEM_PROMPT,
+    USE_PROXY,
     getEnvKey,
     getElevenLabsEnvKey,
 } from './config';
@@ -191,6 +192,9 @@ function buildCoachContext(
 
 // ---------------------------------------------------------------- component
 
+/** Where the active key comes from. 'proxy' = held server-side (deployed). */
+type KeySource = 'pasted' | 'env' | 'proxy' | 'none';
+
 export default function App({ onHome }: { onHome?: () => void } = {}) {
     // Default to the Encode target; look it up by id so this survives reordering.
     const defaultTargetIndex = Math.max(
@@ -228,19 +232,26 @@ export default function App({ onHome }: { onHome?: () => void } = {}) {
 
     const envKey = getEnvKey(provider);
     const effectiveKey = keyOverride.trim() || envKey;
-    const keySource: 'pasted' | 'env' | 'none' = keyOverride.trim()
+    const keySource: KeySource = keyOverride.trim()
         ? 'pasted'
         : envKey
           ? 'env'
-          : 'none';
+          : USE_PROXY
+            ? 'proxy'
+            : 'none';
+    // A request can be sent when we have a client key OR the server proxy holds one.
+    const keyReady = keySource !== 'none';
 
     const sttEnvKey = getElevenLabsEnvKey();
     const effectiveSttKey = sttKeyOverride.trim() || sttEnvKey;
-    const sttKeySource: 'pasted' | 'env' | 'none' = sttKeyOverride.trim()
+    const sttKeySource: KeySource = sttKeyOverride.trim()
         ? 'pasted'
         : sttEnvKey
           ? 'env'
-          : 'none';
+          : USE_PROXY
+            ? 'proxy'
+            : 'none';
+    const sttKeyReady = sttKeySource !== 'none';
 
     // Render the reference target whenever the selection changes; reset the round.
     useEffect(() => {
@@ -308,7 +319,7 @@ export default function App({ onHome }: { onHome?: () => void } = {}) {
         round.phase === 'ready' &&
         !!draft.trim() &&
         round.promptsUsed < MAX_PROMPTS &&
-        !!effectiveKey &&
+        keyReady &&
         refPixels.current != null;
 
     const promptDisabled =
@@ -357,6 +368,7 @@ export default function App({ onHome }: { onHome?: () => void } = {}) {
                 provider,
                 model,
                 apiKey: effectiveKey,
+                useProxy: USE_PROXY,
                 system: SYSTEM_PROMPT,
                 messages,
             });
@@ -398,13 +410,17 @@ export default function App({ onHome }: { onHome?: () => void } = {}) {
     // Mic toggle: click to record, click again to stop + transcribe. The
     // transcript is appended into the prompt draft (input-only — no agent call).
     async function handleMic() {
-        if (promptDisabled || !effectiveSttKey) return;
+        if (promptDisabled || !sttKeyReady) return;
         try {
             if (recorder.isRecording) {
                 const audio = await recorder.stop();
                 setIsTranscribing(true);
                 const raw = (
-                    await transcribeAudio({ apiKey: effectiveSttKey, audio })
+                    await transcribeAudio({
+                        apiKey: effectiveSttKey,
+                        useProxy: USE_PROXY,
+                        audio,
+                    })
                 ).trim();
                 // Resolve spoken colour names to their exact hex in-place, so the
                 // player sees e.g. "azure (#2256e0)" beside what they said.
@@ -454,7 +470,7 @@ export default function App({ onHome }: { onHome?: () => void } = {}) {
     // Post-round only: hand the coach the target + the player's prompts and ask
     // for feedback. Reuses the active provider/model/key; no scored attempt.
     async function handleCoach() {
-        if (!effectiveKey || round.steps.length === 0) return;
+        if (!keyReady || round.steps.length === 0) return;
         dispatch({ type: 'COACH_START' });
         try {
             const content = buildCoachContext(
@@ -466,6 +482,7 @@ export default function App({ onHome }: { onHome?: () => void } = {}) {
                 provider,
                 model,
                 apiKey: effectiveKey,
+                useProxy: USE_PROXY,
                 system: COACH_SYSTEM_PROMPT,
                 messages: [{ role: 'user', content }],
             });
@@ -755,13 +772,13 @@ export default function App({ onHome }: { onHome?: () => void } = {}) {
                                             <button
                                                 className="btn"
                                                 onClick={handleCoach}
-                                                disabled={!effectiveKey}
+                                                disabled={!keyReady}
                                             >
                                                 {round.coachStatus === 'error'
                                                     ? 'Retry feedback'
                                                     : 'Get feedback'}
                                             </button>
-                                            {!effectiveKey && (
+                                            {!keyReady && (
                                                 <p className="hint warn">
                                                     Add an API key to get
                                                     coaching feedback.
@@ -808,11 +825,11 @@ export default function App({ onHome }: { onHome?: () => void } = {}) {
                                     onClick={handleMic}
                                     disabled={
                                         promptDisabled ||
-                                        !effectiveSttKey ||
+                                        !sttKeyReady ||
                                         isTranscribing
                                     }
                                     title={
-                                        effectiveSttKey
+                                        sttKeyReady
                                             ? 'Speak your prompt'
                                             : 'Add an ElevenLabs API key to use the mic'
                                     }
@@ -834,7 +851,7 @@ export default function App({ onHome }: { onHome?: () => void } = {}) {
                                     Submit early
                                 </button>
                             </div>
-                            {!effectiveKey && (
+                            {!keyReady && (
                                 <p className="hint warn">
                                     No API key for {providerCfg.label}. Add one
                                     to <code>.env</code> or paste it in the
@@ -969,9 +986,9 @@ interface ToolbarProps {
     onHome?: () => void;
     provider: ProviderId;
     model: string;
-    keySource: 'pasted' | 'env' | 'none';
+    keySource: KeySource;
     keyOverride: string;
-    sttKeySource: 'pasted' | 'env' | 'none';
+    sttKeySource: KeySource;
     sttKeyOverride: string;
     gamma: number;
     lambda: number;
@@ -1137,7 +1154,9 @@ function Toolbar(props: ToolbarProps) {
                                 ? 'from .env'
                                 : props.keySource === 'pasted'
                                   ? 'pasted'
-                                  : 'missing'}
+                                  : props.keySource === 'proxy'
+                                    ? 'server'
+                                    : 'missing'}
                         </em>
                     </span>
                     <input
@@ -1145,7 +1164,9 @@ function Toolbar(props: ToolbarProps) {
                         placeholder={
                             props.keySource === 'env'
                                 ? 'using .env key'
-                                : 'paste key (optional)'
+                                : props.keySource === 'proxy'
+                                  ? 'using server key (paste to override)'
+                                  : 'paste key (optional)'
                         }
                         value={props.keyOverride}
                         onChange={(e) => props.onKeyOverride(e.target.value)}
@@ -1160,7 +1181,9 @@ function Toolbar(props: ToolbarProps) {
                                 ? 'from .env'
                                 : props.sttKeySource === 'pasted'
                                   ? 'pasted'
-                                  : 'missing'}
+                                  : props.sttKeySource === 'proxy'
+                                    ? 'server'
+                                    : 'missing'}
                         </em>
                     </span>
                     <input
@@ -1168,7 +1191,9 @@ function Toolbar(props: ToolbarProps) {
                         placeholder={
                             props.sttKeySource === 'env'
                                 ? 'using .env key'
-                                : 'paste key for mic (optional)'
+                                : props.sttKeySource === 'proxy'
+                                  ? 'using server key (paste to override)'
+                                  : 'paste key for mic (optional)'
                         }
                         value={props.sttKeyOverride}
                         onChange={(e) => props.onSttKeyOverride(e.target.value)}

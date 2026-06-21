@@ -15,6 +15,14 @@ export const ROUND_MS = 10 * 60 * 1000; // 10 minutes
 export const DEFAULT_GAMMA = 2.5; // accuracy curve exponent (~2–3)
 export const DEFAULT_LAMBDA = 0.05; // per-prompt decay
 
+/**
+ * When true, the browser sends NO API key and instead calls the server-side
+ * proxy (api/llm.ts, api/stt.ts), which holds the keys. Set VITE_USE_PROXY=1 in
+ * the deployed environment (e.g. Vercel) so keys never reach the bundle. Unset
+ * locally to keep the original browser-direct path with .env / pasted keys.
+ */
+export const USE_PROXY = (import.meta.env.VITE_USE_PROXY ?? '') !== '';
+
 /** ElevenLabs Speech-to-Text (prompt-box mic). Separate from the LLM providers. */
 export const ELEVENLABS = {
     endpoint: 'https://api.elevenlabs.io/v1/speech-to-text',
