@@ -4,16 +4,18 @@ import { sameOriginOk } from './_guard';
 /**
  * Server-side ElevenLabs Speech-to-Text proxy (Vercel Serverless Function).
  *
- * The browser POSTs the raw recorded audio as the request body (Content-Type =
- * the clip's mime, e.g. audio/webm). This function injects ELEVENLABS_API_KEY
- * from the server environment, forwards to ElevenLabs as multipart/form-data,
- * and returns { text }.
+ * The browser POSTs JSON `{ audio: <base64>, type: <mime> }` (no API key). We
+ * decode the audio, inject ELEVENLABS_API_KEY from the server environment,
+ * forward to ElevenLabs as multipart/form-data, and return `{ text }`.
+ *
+ * Why base64/JSON and not the raw request stream: standalone @vercel/node
+ * functions always buffer and parse the request body before the handler runs,
+ * so reading `req` as a raw stream never fires 'data'/'end' and the function
+ * hangs/crashes (FUNCTION_INVOCATION_FAILED). JSON via `req.body` is the
+ * reliable path — the same one api/llm.ts uses.
  *
  * The key lives ONLY here (Vercel env var ELEVENLABS_API_KEY, no VITE_ prefix).
  */
-
-// We need the raw bytes, not a parsed JSON body.
-export const config = { api: { bodyParser: false } };
 
 const ENDPOINT = 'https://api.elevenlabs.io/v1/speech-to-text';
 const MODEL_ID = 'scribe_v1';
@@ -31,13 +33,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const apiKey = process.env.ELEVENLABS_API_KEY;
     if (!apiKey) throw new Error('Server is missing ELEVENLABS_API_KEY.');
 
-    const audio = await readRawBody(req);
-    const type =
-      (req.headers['content-type'] as string | undefined) ?? 'application/octet-stream';
+    const { audio, type } = (req.body ?? {}) as { audio?: string; type?: string };
+    if (!audio) throw new Error('No audio payload.');
+    const bytes = Buffer.from(audio, 'base64');
 
     const form = new FormData();
     form.append('model_id', MODEL_ID);
-    form.append('file', new Blob([new Uint8Array(audio)], { type }), 'audio');
+    form.append('file', new Blob([bytes], { type: type || 'audio/webm' }), 'audio.webm');
 
     const upstream = await fetch(ENDPOINT, {
       method: 'POST',
@@ -53,13 +55,4 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   } catch (e) {
     res.status(502).json({ error: e instanceof Error ? e.message : 'Proxy error' });
   }
-}
-
-function readRawBody(req: VercelRequest): Promise<Buffer> {
-  return new Promise((resolve, reject) => {
-    const chunks: Buffer[] = [];
-    req.on('data', (chunk: Buffer) => chunks.push(chunk));
-    req.on('end', () => resolve(Buffer.concat(chunks)));
-    req.on('error', reject);
-  });
 }

@@ -43,12 +43,18 @@ export async function transcribeAudio({
     return data.text ?? '';
 }
 
-/** Send the raw audio bytes to the server proxy, which adds the key and forwards. */
+/**
+ * Send the audio to the server proxy as base64 JSON, which adds the key and
+ * forwards. JSON (not raw binary) because standalone @vercel/node functions
+ * buffer/parse the body before the handler runs, so a raw request stream is
+ * unreadable there — see api/stt.ts.
+ */
 async function transcribeViaProxy(audio: Blob): Promise<string> {
+    const base64 = await blobToBase64(audio);
     const res = await fetch('/api/stt', {
         method: 'POST',
-        headers: { 'content-type': audio.type || 'application/octet-stream' },
-        body: audio,
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ audio: base64, type: audio.type || 'audio/webm' }),
     });
     if (!res.ok) {
         const body = await res.text().catch(() => '');
@@ -56,4 +62,19 @@ async function transcribeViaProxy(audio: Blob): Promise<string> {
     }
     const data = await res.json();
     return data.text ?? '';
+}
+
+/** Read a Blob as a base64 string (without the `data:...;base64,` prefix). */
+function blobToBase64(blob: Blob): Promise<string> {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+            const result = reader.result as string; // data:<mime>;base64,<data>
+            const comma = result.indexOf(',');
+            resolve(comma >= 0 ? result.slice(comma + 1) : result);
+        };
+        reader.onerror = () =>
+            reject(reader.error ?? new Error('Failed to read audio.'));
+        reader.readAsDataURL(blob);
+    });
 }
