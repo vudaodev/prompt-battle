@@ -23,6 +23,21 @@ export const DEFAULT_LAMBDA = 0.05; // per-prompt decay
  */
 export const USE_PROXY = (import.meta.env.VITE_USE_PROXY ?? '') !== '';
 
+// Defense-in-depth: in proxy mode no VITE_ key should be set, since Vite inlines
+// any VITE_* var into the public bundle. Warn loudly if one slipped into the
+// deploy env (the key would already be leaking into dist/).
+if (USE_PROXY) {
+  const leaked =
+    (['anthropic', 'openai', 'gemini'] as const).map(getEnvKey).some(Boolean) ||
+    Boolean(getElevenLabsEnvKey());
+  if (leaked) {
+    console.warn(
+      '[prompt-battle] USE_PROXY is on but a VITE_*_API_KEY is set — it will be ' +
+        'inlined into the public bundle. Unset all VITE_ keys in the proxy deploy.',
+    );
+  }
+}
+
 /** ElevenLabs Speech-to-Text (prompt-box mic). Separate from the LLM providers. */
 export const ELEVENLABS = {
     endpoint: 'https://api.elevenlabs.io/v1/speech-to-text',
