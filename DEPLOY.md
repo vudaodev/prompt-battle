@@ -119,6 +119,35 @@ vercel --prod          # promote to production with the env vars applied
 
 ---
 
+## Test the serverless functions locally (`vercel dev`)
+
+⚠️ **`npm run dev` and `npm run build` do NOT exercise the `api/` functions.** Vite
+serves the client and never runs the proxy; `tsc -p tsconfig.api.json` only
+*type-checks* it. So an entire class of bugs — wrong ESM import paths, body-parsing
+assumptions, missing globals, the `@vercel/node` runtime itself — is **invisible
+until you deploy**. (Two such bugs already bit this project: a raw-stream read that
+crashed `/api/stt`, and a relative import missing its `.js` extension that crashed
+both functions with `ERR_MODULE_NOT_FOUND`.)
+
+To run the functions through the **same runtime Vercel uses**, before pushing:
+
+```bash
+npm i -g vercel          # once
+vercel link              # once, link this folder to the Vercel project
+vercel env pull .env     # pull the deployed env vars (incl. VITE_USE_PROXY + secret keys)
+vercel dev               # serves the app AND the api/ functions locally
+```
+
+Then open the printed URL and run the **Verification checklist** below against it.
+If a function would crash on Vercel, it crashes here too — with the same error — so
+you catch it locally instead of in production.
+
+> `vercel env pull` writes real keys into `.env` (gitignored). That's fine locally;
+> just don't commit it. With `VITE_USE_PROXY=1` pulled in, the local app uses the
+> proxy path exactly like production.
+
+---
+
 ## Verification checklist
 
 On your deployed URL:
@@ -156,3 +185,9 @@ On your deployed URL:
   may be stale — update the `models` array (first entry is the default).
 - **Build fails on `tsc -p tsconfig.api.json`:** ensure `@vercel/node` installed
   (it's a dev dependency; Vercel installs dev deps during build by default).
+- **`FUNCTION_INVOCATION_FAILED` / `ERR_MODULE_NOT_FOUND` from `/api/*`:** a runtime
+  error in a serverless function that `npm run build` can't catch. Common causes
+  here: a relative import missing its `.js` extension (this repo is `"type":
+  "module"`, so Vercel runs `api/*` as ESM and Node requires explicit extensions —
+  `import './_guard.js'`, not `'./_guard'`), or reading the raw request stream
+  instead of `req.body`. Reproduce locally with `vercel dev` (see above).
