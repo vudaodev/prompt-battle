@@ -1,5 +1,5 @@
 import { useEffect, useReducer, useRef, useState } from 'react';
-import type { ReactNode } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 import {
     CANVAS,
     DEFAULT_GAMMA,
@@ -518,7 +518,14 @@ export default function App({ onHome }: { onHome?: () => void } = {}) {
 
             <main className="grid">
                 {/* ---- target ---- */}
-                <section className="panel">
+                <section
+                    className="panel panel--stage"
+                    style={
+                        {
+                            '--canvas-width': `${CANVAS.width}px`,
+                        } as CSSProperties
+                    }
+                >
                     <h2 className="panel-title">Target</h2>
                     <Stage>
                         {round.phase === 'idle' ? (
@@ -867,7 +874,14 @@ export default function App({ onHome }: { onHome?: () => void } = {}) {
                 </section>
 
                 {/* ---- agent output ---- */}
-                <section className="panel">
+                <section
+                    className="panel panel--stage"
+                    style={
+                        {
+                            '--canvas-width': `${CANVAS.width}px`,
+                        } as CSSProperties
+                    }
+                >
                     <div className="panel-title-row">
                         <h2 className="panel-title">Agent output</h2>
                         <label className="toggle">
@@ -974,6 +988,29 @@ interface ToolbarProps {
 
 function Toolbar(props: ToolbarProps) {
     const cfg = PROVIDERS.find((p) => p.id === props.provider)!;
+    const [settingsOpen, setSettingsOpen] = useState(false);
+    const settingsRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        if (!settingsOpen) return;
+        const onPointerDown = (e: MouseEvent) => {
+            if (
+                settingsRef.current &&
+                !settingsRef.current.contains(e.target as Node)
+            )
+                setSettingsOpen(false);
+        };
+        const onKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') setSettingsOpen(false);
+        };
+        document.addEventListener('mousedown', onPointerDown);
+        document.addEventListener('keydown', onKeyDown);
+        return () => {
+            document.removeEventListener('mousedown', onPointerDown);
+            document.removeEventListener('keydown', onKeyDown);
+        };
+    }, [settingsOpen]);
+
     return (
         <header className="toolbar">
             {props.onHome ? (
@@ -1003,9 +1040,66 @@ function Toolbar(props: ToolbarProps) {
                         ))}
                     </select>
                 </label>
+            </div>
 
-                <label className="field">
-                    <span>Provider</span>
+            <div className="settings" ref={settingsRef}>
+                <button
+                    type="button"
+                    className="settings-trigger"
+                    aria-label="Settings"
+                    aria-expanded={settingsOpen}
+                    title="Settings"
+                    onClick={() => setSettingsOpen((open) => !open)}
+                >
+                    <svg
+                        width="20"
+                        height="20"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        aria-hidden="true"
+                    >
+                        <circle cx="12" cy="12" r="3" />
+                        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+                    </svg>
+                </button>
+
+                {settingsOpen && (
+                    <div className="settings-panel">
+                        <div className="score-explainer">
+                            <code className="score-formula">
+                                Score = 1000 · A<sup>γ</sup> · (1 − λ(P − 1))
+                            </code>
+                            <dl className="score-terms">
+                                <div>
+                                    <dt>A</dt>
+                                    <dd>accuracy — pixel match, shown 0–100%</dd>
+                                </div>
+                                <div>
+                                    <dt>γ</dt>
+                                    <dd>
+                                        curve exponent — higher punishes
+                                        near-misses harder
+                                    </dd>
+                                </div>
+                                <div>
+                                    <dt>λ</dt>
+                                    <dd>
+                                        per-prompt penalty — each prompt after
+                                        the first cuts the score
+                                    </dd>
+                                </div>
+                                <div>
+                                    <dt>P</dt>
+                                    <dd>prompts used (max {MAX_PROMPTS})</dd>
+                                </div>
+                            </dl>
+                        </div>
+                        <label className="field">
+                            <span>Provider</span>
                     <select
                         value={props.provider}
                         onChange={(e) =>
@@ -1103,7 +1197,9 @@ function Toolbar(props: ToolbarProps) {
                         value={props.lambda}
                         onChange={(e) => props.onLambda(Number(e.target.value))}
                     />
-                </label>
+                        </label>
+                    </div>
+                )}
             </div>
         </header>
     );
