@@ -117,10 +117,7 @@ export default function Landing({
                     >
                         Challenges
                     </button>
-                    <button
-                        className="landing-nav-link"
-                        onClick={onDashboard}
-                    >
+                    <button className="landing-nav-link" onClick={onDashboard}>
                         My progress
                     </button>
                 </div>
@@ -145,12 +142,15 @@ export default function Landing({
                         Prompt Battle makes prompting a measurable skill. Your
                         team recreates a hidden visual by directing a blind AI
                         agent in plain language — and a pixel-diff score proves
-                        exactly how clear the instructions were. Describe it well
-                        enough and the rebuild scores a perfect 100%. Type or
-                        speak every prompt with built-in voice input.
+                        exactly how clear the instructions were. Describe it
+                        well enough and the rebuild scores a perfect 100%. Type
+                        or speak every prompt with built-in voice input.
                     </p>
                     <div className="landing-cta">
-                        <button className="btn primary" onClick={() => onStart()}>
+                        <button
+                            className="btn primary"
+                            onClick={() => onStart()}
+                        >
                             Play now
                         </button>
                         <button
@@ -162,21 +162,22 @@ export default function Landing({
                     </div>
                 </div>
 
-                {/* Decorative mock of the game UI — not a real target render. */}
+                {/* Product demo — replaces the old hand-built CSS mock. */}
                 <div className="landing-preview" aria-hidden="true">
                     <div className="landing-preview-bar">
                         <span className="landing-preview-dot" />
                         <span className="landing-preview-dot" />
                         <span className="landing-preview-dot" />
                     </div>
-                    <div className="landing-preview-canvas">
-                        <span className="landing-preview-square" />
-                        <span className="landing-preview-circle" />
-                    </div>
-                    <div className="landing-preview-prompt">
-                        <span className="landing-preview-promptline" />
-                        <span className="landing-preview-promptline short" />
-                    </div>
+                    <video
+                        className="landing-preview-video"
+                        src="/demo.mp4"
+                        muted
+                        autoPlay
+                        loop
+                        playsInline
+                        preload="metadata"
+                    />
                 </div>
             </section>
 

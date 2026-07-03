@@ -1070,54 +1070,14 @@ body {
     background: var(--border);
 }
 
-.landing-preview-canvas {
-    position: relative;
-    height: 180px;
+.landing-preview-video {
+    display: block;
+    width: 100%;
+    aspect-ratio: 16 / 10;
     border-radius: 10px;
     border: 1px solid var(--border);
     background: var(--surface-2);
-    overflow: hidden;
-}
-
-.landing-preview-square {
-    position: absolute;
-    left: 18%;
-    top: 28%;
-    width: 64px;
-    height: 64px;
-    border-radius: 8px;
-    background: var(--diff);
-}
-
-.landing-preview-circle {
-    position: absolute;
-    right: 20%;
-    top: 30%;
-    width: 70px;
-    height: 70px;
-    border-radius: 999px;
-    background: var(--accent);
-}
-
-.landing-preview-prompt {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    margin-top: 12px;
-    padding: 12px;
-    border-radius: 10px;
-    border: 1px solid var(--border);
-    background: var(--surface-2);
-}
-
-.landing-preview-promptline {
-    height: 8px;
-    border-radius: 999px;
-    background: var(--border);
-}
-
-.landing-preview-promptline.short {
-    width: 55%;
+    object-fit: cover;
 }
 
 /* ---- sections ---- */
