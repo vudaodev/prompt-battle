@@ -10,7 +10,7 @@ import { targets } from './targets/manifest';
 /**
  * Pre-game landing page. Purely presentational — explains the product and hands
  * off to the game via Start CTAs. No game logic, no rendering of targets; the
- * hero preview is a hand-built decorative mock, never a real target render.
+ * hero shows a pre-recorded product demo video, never a real target render.
  */
 export default function Landing({
     onStart,
@@ -129,7 +129,8 @@ export default function Landing({
             <section className="landing-hero">
                 <div className="landing-hero-copy">
                     <span className="landing-eyebrow">
-                        Prompt training for teams
+                        Prompt training for teams{' '}
+                        <span aria-hidden="true">→</span>
                     </span>
                     <h1 className="landing-title">
                         Turn vague asks into
@@ -142,9 +143,8 @@ export default function Landing({
                         Prompt Battle makes prompting a measurable skill. Your
                         team recreates a hidden visual by directing a blind AI
                         agent in plain language — and a pixel-diff score proves
-                        exactly how clear the instructions were. Describe it
-                        well enough and the rebuild scores a perfect 100%. Type
-                        or speak every prompt with built-in voice input.
+                        exactly how clear the instructions were. Type or speak
+                        every prompt with built-in voice input.
                     </p>
                     <div className="landing-cta">
                         <button
@@ -162,23 +162,17 @@ export default function Landing({
                     </div>
                 </div>
 
-                {/* Product demo — replaces the old hand-built CSS mock. */}
-                <div className="landing-preview" aria-hidden="true">
-                    <div className="landing-preview-bar">
-                        <span className="landing-preview-dot" />
-                        <span className="landing-preview-dot" />
-                        <span className="landing-preview-dot" />
-                    </div>
-                    <video
-                        className="landing-preview-video"
-                        src="/demo.mp4"
-                        muted
-                        autoPlay
-                        loop
-                        playsInline
-                        preload="metadata"
-                    />
-                </div>
+                {/* Product demo — plays inline, no browser-frame chrome. */}
+                <video
+                    className="landing-demo"
+                    src="/demo.mp4"
+                    muted
+                    autoPlay
+                    loop
+                    playsInline
+                    preload="metadata"
+                    aria-hidden="true"
+                />
             </section>
 
             <section className="landing-section" id="how-it-works">
@@ -193,7 +187,8 @@ export default function Landing({
                     ))}
                 </div>
                 <p className="landing-note">
-                    The catch: your agent is blind. Everything it builds comes
+                    <strong>The catch:</strong> your agent is blind. Everything
+                    it builds comes
                     from your words alone — get them right and a flawless
                     reconstruction is on the table.
                 </p>
@@ -286,7 +281,8 @@ export default function Landing({
 
             <section className="landing-band">
                 <h2 className="landing-band-title">
-                    Think you can describe your way to 1000?
+                    Think you can describe your way to{' '}
+                    <span className="landing-band-accent">1000</span>?
                 </h2>
                 <p className="landing-band-sub">
                     One target, your words, a blind agent. The perfect score is

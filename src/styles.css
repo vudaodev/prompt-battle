@@ -941,6 +941,12 @@ body {
 
 /* ---- landing page ---- */
 .landing {
+    /* Landing-scoped palette: darker, near-black panels with dim green borders.
+       Game/dashboard keep the :root values — only landing children resolve these. */
+    --surface: #0c1510;
+    --surface-2: #121f16;
+    --border: #1d3024;
+
     max-width: 1040px;
     margin: 0 auto;
     padding: 0 24px 64px;
@@ -998,38 +1004,98 @@ body {
     font-size: 14px;
 }
 
+/* Landing buttons are pills: primary is a dark-green fill with green text
+   rather than the game's solid bright-green rectangle. */
+.landing .btn {
+    border-radius: 999px;
+}
+
+.landing .btn.primary {
+    background: #0e2a1b;
+    border-color: rgba(70, 236, 130, 0.45);
+    color: var(--accent);
+    transition:
+        border-color 0.15s ease,
+        background 0.15s ease;
+}
+
+.landing .btn.primary:hover:not(:disabled) {
+    background: #123722;
+    border-color: rgba(70, 236, 130, 0.75);
+}
+
+.landing .btn.ghost {
+    background: transparent;
+    border-color: var(--border);
+}
+
 /* ---- hero ---- */
 .landing-hero {
-    display: grid;
-    grid-template-columns: 1.05fr 0.95fr;
+    position: relative;
+    display: flex;
+    flex-direction: column;
     align-items: center;
-    gap: 40px;
-    padding: 72px 0 56px;
-    border-bottom: 1px solid var(--border);
+    text-align: center;
+    padding: 80px 0 64px;
+}
+
+/* Ambient backdrop: soft green glow plus a faint grid that fades downward. */
+.landing-hero::before {
+    content: '';
+    position: absolute;
+    inset: -40px 0 0;
+    pointer-events: none;
+    z-index: -1;
+    background:
+        radial-gradient(
+            60% 55% at 50% 0%,
+            rgba(70, 236, 130, 0.09),
+            transparent 70%
+        ),
+        linear-gradient(rgba(70, 236, 130, 0.05) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(70, 236, 130, 0.05) 1px, transparent 1px);
+    background-size:
+        100% 100%,
+        48px 48px,
+        48px 48px;
+    -webkit-mask-image: linear-gradient(#000 30%, transparent 95%);
+    mask-image: linear-gradient(#000 30%, transparent 95%);
 }
 
 .landing-eyebrow {
+    display: inline-block;
     font-family: var(--mono);
     font-size: 12px;
     text-transform: uppercase;
     letter-spacing: 0.18em;
     color: var(--accent);
+    padding: 6px 16px;
+    border: 1px solid rgba(70, 236, 130, 0.35);
+    border-radius: 999px;
+    background: rgba(70, 236, 130, 0.07);
 }
 
 .landing-title {
-    font-size: clamp(34px, 5vw, 52px);
+    font-size: clamp(38px, 6vw, 64px);
     line-height: 1.05;
     letter-spacing: -0.03em;
-    margin: 16px 0 0;
+    margin: 20px 0 0;
+    /* Subtle white→grey wash on the first line; the accent span re-fills green. */
+    background: linear-gradient(180deg, #ffffff, #b9cdc1);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
 }
 
 .landing-title-accent {
+    background: none;
+    -webkit-text-fill-color: var(--accent);
     color: var(--accent);
 }
 
 .landing-lede {
-    max-width: 520px;
-    margin: 20px 0 0;
+    max-width: 560px;
+    margin: 20px auto 0;
     color: var(--muted);
     font-size: 16px;
     line-height: 1.6;
@@ -1038,6 +1104,7 @@ body {
 .landing-cta {
     display: flex;
     flex-wrap: wrap;
+    justify-content: center;
     gap: 12px;
     margin-top: 32px;
 }
@@ -1048,55 +1115,40 @@ body {
     padding: 12px 28px;
 }
 
-/* ---- hero preview mock (decorative) ---- */
-.landing-preview {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 14px;
-    padding: 14px;
-    box-shadow: 0 24px 60px rgba(3, 8, 5, 0.5);
-}
-
-.landing-preview-bar {
-    display: flex;
-    gap: 6px;
-    padding: 2px 2px 12px;
-}
-
-.landing-preview-dot {
-    width: 9px;
-    height: 9px;
-    border-radius: 999px;
-    background: var(--border);
-}
-
-.landing-preview-video {
+/* ---- hero demo video (bare, centered below copy) ---- */
+.landing-demo {
     display: block;
     width: 100%;
+    max-width: 760px;
+    margin: 56px auto 0;
     aspect-ratio: 16 / 10;
-    border-radius: 10px;
-    border: 1px solid var(--border);
-    background: var(--surface-2);
     object-fit: cover;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    background: var(--surface);
+    box-shadow: 0 24px 60px rgba(3, 8, 5, 0.5);
 }
 
 /* ---- sections ---- */
 .landing-section {
-    padding: 56px 0 8px;
+    padding: 72px 0 8px;
     /* Offset anchor scrolling so the sticky nav doesn't cover the heading. */
     scroll-margin-top: 80px;
 }
 
 .landing-h2 {
-    font-size: 26px;
+    font-size: 30px;
     letter-spacing: -0.02em;
     margin: 0;
+    text-align: center;
 }
 
 .landing-sub {
     color: var(--muted);
     font-size: 14px;
-    margin: 8px 0 0;
+    margin: 8px auto 0;
+    max-width: 560px;
+    text-align: center;
 }
 
 .landing-steps {
@@ -1120,8 +1172,8 @@ body {
     width: 28px;
     height: 28px;
     border-radius: 999px;
-    background: var(--surface-2);
-    border: 1px solid var(--border);
+    background: transparent;
+    border: 1px solid rgba(70, 236, 130, 0.45);
     color: var(--accent);
     font-family: var(--mono);
     font-size: 13px;
@@ -1143,13 +1195,17 @@ body {
 .landing-note {
     margin: 20px 0 0;
     padding: 14px 16px;
-    border: 1px solid var(--border);
-    border-left: 3px solid var(--accent);
+    border: 1px solid rgba(70, 236, 130, 0.3);
     border-radius: 10px;
-    background: var(--surface);
+    background: rgba(70, 236, 130, 0.05);
     color: var(--muted);
     font-size: 14px;
     line-height: 1.55;
+}
+
+.landing-note strong {
+    color: var(--accent);
+    font-weight: 700;
 }
 
 /* ---- scoring ---- */
@@ -1176,7 +1232,7 @@ body {
 
 .landing-formula-code {
     font-family: var(--mono);
-    font-size: clamp(16px, 2.4vw, 22px);
+    font-size: clamp(14px, 1.8vw, 20px);
     color: var(--text);
 }
 
@@ -1292,12 +1348,10 @@ button.landing-card:focus-visible {
 .landing-card-soon {
     display: inline-block;
     margin-bottom: 10px;
-    padding: 2px 8px;
-    border-radius: 999px;
-    border: 1px dashed var(--border);
-    font-size: 11px;
+    font-family: var(--mono);
+    font-size: 10px;
     font-weight: 600;
-    letter-spacing: 0.04em;
+    letter-spacing: 0.14em;
     text-transform: uppercase;
     color: var(--muted);
 }
@@ -1326,20 +1380,39 @@ button.landing-card:focus-visible {
     color: #fff;
 }
 
+/* Landing-only: medium reads amber so the three difficulties are distinct
+   at a glance (the game keeps its green medium badge). */
+.landing .badge.diff-medium {
+    background: #e8c547;
+    color: #1a1405;
+}
+
 /* ---- closing CTA band ---- */
 .landing-band {
+    position: relative;
+    overflow: hidden;
     margin-top: 64px;
-    padding: 56px 24px;
+    padding: 72px 24px;
     text-align: center;
-    background: var(--surface);
+    background:
+        radial-gradient(
+            70% 90% at 50% 0%,
+            rgba(70, 236, 130, 0.08),
+            transparent 70%
+        ),
+        var(--surface);
     border: 1px solid var(--border);
     border-radius: 18px;
 }
 
 .landing-band-title {
-    font-size: clamp(24px, 4vw, 34px);
+    font-size: clamp(28px, 4.5vw, 44px);
     letter-spacing: -0.02em;
     margin: 0;
+}
+
+.landing-band-accent {
+    color: var(--accent);
 }
 
 .landing-band-sub {
@@ -1412,9 +1485,11 @@ button.landing-card:focus-visible {
 /* ---- responsive ---- */
 @media (max-width: 860px) {
     .landing-hero {
-        grid-template-columns: 1fr;
-        gap: 32px;
         padding: 48px 0 40px;
+    }
+
+    .landing-demo {
+        margin-top: 40px;
     }
 
     .landing-scoring {
